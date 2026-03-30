@@ -3,7 +3,7 @@ name: Auto Publish Mod
 on:
   push:
     branches:
-      - 'master'
+      - master
 
 concurrency:
   group: auto-publish-${{ github.ref_name || github.run_id }}
