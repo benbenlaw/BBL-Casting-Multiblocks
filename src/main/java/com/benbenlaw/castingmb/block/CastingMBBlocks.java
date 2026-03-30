@@ -25,7 +25,6 @@ public class CastingMBBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
-
     public static final DeferredBlock<Block> MB_CONTROLLER = registerBlock("mb_controller",
             properties -> new MBControllerBlock(properties
                     .strength(1.0F)
