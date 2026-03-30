@@ -1,0 +1,20 @@
+//Castig Multiblocks
+
+# 1.0.0
+
+# Changes from 1.21.1 Casting
+- Removed coolant tanks
+- Uses Mulitblock Black Bricks instead of Black Bricks
+- Multiple Tanks can be used in the same Multiblock, 2 is optimal one for cooling and one for fuel
+- If more are present the tank with the coolest fuel will be used to coolant for solidifier part of the multiblock controller
+- If more are present the tank with the hottest fuel will be used as fuel for the controller
+- Solidifiers now use fluid filters like BBL Utility and base Casting. JEI Dragging for fluids is also supported for the solidifier.
+- Multiblock Mixers are NYI
+- Multiblock Valves are NYI
+- Controller can accept Items and Fluids via hopper and pipes (tested with BBL Routers)
+- Controller GUI now is scrollable and has a max item count of 100 now
+- Additional item slots are added for each air block inside the controller multiblock
+- Shared fluid tank also uses this system now with each air block adding 1000mb of capacity to the shared tank
+- Max height is 64 max radius is 128 (this includes all sides)
+- Max volume is 1024 blocks
+- Any combination that is equal or less than the volume and within the height and radius limits is valid for the multiblock controller

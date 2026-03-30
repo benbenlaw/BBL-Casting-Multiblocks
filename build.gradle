@@ -1,0 +1,182 @@
+import net.darkhax.curseforgegradle.TaskPublishCurseForge
+
+plugins {
+    id 'java-library'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.140'
+    id 'net.darkhax.curseforgegradle' version '1.1.24'
+    id "com.modrinth.minotaur" version "2.+"
+}
+
+version = "${minecraft_version}-${mod_version}"
+group = mod_group_id
+
+repositories {
+    mavenLocal()
+
+    maven {
+        name = "Curse Maven"
+        url = uri("https://cursemaven.com")
+        content {
+            includeGroup("curse.maven")
+        }
+    }
+
+    maven {
+        name = "Jared's maven"
+        url = "https://maven.blamejared.com/"
+    }
+    maven {
+        name = "ModMaven"
+        url = "https://modmaven.dev"
+    }
+}
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+
+neoForge {
+    version = project.neo_version
+
+    runs {
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty 'forge.logging.console.level', 'debug'
+        }
+
+        client {
+            client()
+            systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        server {
+            server()
+            systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
+            programArgument '--nogui'
+        }
+
+        clientData {
+            clientData()
+            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+dependencies {
+
+    //JEI
+    implementation("mezz.jei:jei-${jei_mc_version}-neoforge:${jei_version}")
+    // BBL Core
+    implementation("curse.maven:bbl-core-1135181:${core_version}")
+    // Casting
+    implementation("curse.maven:bblcasting-1052163:${casting_version}")
+    //Routers
+    implementation("curse.maven:bbl-routers-1334500:7805885")
+    //Routers
+    //implementation("curse.maven:hopeful-1230881:7828999")
+
+}
+
+tasks.withType(ProcessResources).configureEach {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            neo_version_range      : neo_version_range,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand replaceProperties
+    }
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+
+        maven {
+            url "https://cursemaven.com"
+            content {
+                includeGroup "curse.maven"
+            }
+        }
+
+        maven {
+            url "file://${project.projectDir}/repo"
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}
+
+tasks.register('publishCurseForge', TaskPublishCurseForge) {
+    group "modpublishing"
+
+    apiToken = System.getenv("curseforge_token").toString()
+
+    def projectId = curseforge_id
+    def mainFile = upload(projectId, jar)
+
+    mainFile.changelog = changelog
+    mainFile.releaseType = "${release_type}"
+
+    "${release_versions}".split(',').each {
+        mainFile.addGameVersion("${it}")
+    }
+
+    mainFile.addModLoader("neoforge")
+    mainFile.addEnvironment("server", "client")
+
+}
+
+
+tasks.getByName("modrinth").setGroup("modpublishing")
+
+modrinth {
+    token = System.getenv("modrinth_token").toString()
+    projectId = "${modrinth_id}"
+    versionType = "${release_type}"
+    versionName = "${mod_id}" + "$minecraft_version" + "-" + "$mod_version"
+    uploadFile = jar // With Loom, this MUST be set to `remapJar` instead of `jar`!
+
+    gameVersions = "${release_versions}".split(',').collect {e -> e}
+    loaders = ["neoforge"]
+    changelog = project.changelog
+    dependencies {
+        optional.project "jei"
+    }
+}
+

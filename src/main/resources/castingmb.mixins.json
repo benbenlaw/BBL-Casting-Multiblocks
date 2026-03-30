@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "com.benbenlaw.castingmb.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "SlotMixin"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+
+}

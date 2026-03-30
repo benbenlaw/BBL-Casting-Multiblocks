@@ -1,0 +1,5 @@
+// 26.1-pre-3	2026-03-30T12:57:58.0977222	Loot Tables
+ed1eeb6a3ed72074b17e4ea0dc5705602d8a3021 data/castingmb/loot_table/blocks/mb_black_bricks.json
+445fe81ebcadd2d496728c5ed4b8fe4c06daf222 data/castingmb/loot_table/blocks/mb_controller.json
+20a3667136fdbe7b4a6b862adae53a49dd2a0ab7 data/castingmb/loot_table/blocks/mb_solidifier.json
+969e02a99099d747c0c45cf1fb1b8b91c5519aab data/castingmb/loot_table/blocks/mb_tank.json
