@@ -9,6 +9,7 @@ import com.benbenlaw.castingmb.block.CastingMBBlocks;
 import com.benbenlaw.core.tag.ResourceType;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.PackOutput;
+import net.minecraft.data.recipes.RecipeCategory;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.data.recipes.RecipeProvider;
 import net.minecraft.world.item.Items;
@@ -47,6 +48,10 @@ public class CastingMBRecipeProvider extends RecipeProvider {
 
     @Override
     protected void buildRecipes() {
+
+        //Reset
+        shapeless(RecipeCategory.MISC, CastingMBBlocks.MB_CONTROLLER).requires(CastingMBBlocks.MB_CONTROLLER);
+        shapeless(RecipeCategory.MISC, CastingMBBlocks.MB_TANK).requires(CastingMBBlocks.MB_TANK);
 
         simpleSolidifierRecipe(CastingMBBlocks.MB_BLACK_BRICKS, getFluidIngredient("molten_black_brick", 1000),
                 CastingBlocks.BLACK_BRICKS, "black_brick/mb_black_brick", ResourceType.STORAGE_BLOCKS, getTempFromFluid("molten_black_brick"));
