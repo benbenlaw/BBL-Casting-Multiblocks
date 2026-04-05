@@ -60,7 +60,6 @@ public class CastingMB {
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::registerCapabilities);
-
     }
 
     public void registerCapabilities(RegisterCapabilitiesEvent event) {
