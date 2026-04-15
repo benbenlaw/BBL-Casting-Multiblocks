@@ -1,4 +1,8 @@
-// 26.1-pre-3	2026-03-30T12:30:59.295944	castingmb Recipes
+// 26.1.2	2026-04-15T10:47:01.2104671	castingmb Recipes
+60b08c05395e5ef690720e89601e582b2fc796dc data/castingmb/advancement/recipes/misc/mb_controller.json
+8cb3860fda19df8e7d4427cdef8d0df6e8d4eed0 data/castingmb/advancement/recipes/misc/mb_tank.json
+774df335117c33229d34458f451ac5ff3bce4ca8 data/castingmb/recipe/mb_controller.json
+4a0877b88f4645ea62a76c64f8b5653a603ed6f9 data/castingmb/recipe/mb_tank.json
 7d7f6bd8c71092aee6141bc79b36c4b324518bf1 data/casting/advancement/recipes/solidifier/solidifier/black_brick/mb_black_brick.json
 85ca881ccadcd0e5c236033a5d77cc6e60ca3659 data/casting/advancement/recipes/solidifier/solidifier/black_brick/mb_controller.json
 a5e9fccd7080a97d1c0270566bcf80c751253a38 data/casting/advancement/recipes/solidifier/solidifier/black_brick/mb_solidifier.json

@@ -1,4 +1,4 @@
-// 26.1-pre-3	2026-03-30T12:30:59.2969524	Tags for minecraft:item mod id castingmb
+// 26.1.2	2026-04-15T10:47:01.211468	Tags for minecraft:item mod id castingmb
 12c86b93b33d570270aa4926201b7166e9276bfd data/castingmb/tags/item/controller_extra_blocks.json
 60b281db00a1cc9dc0dba90a53b8740f7c318622 data/castingmb/tags/item/controller_floors.json
 60b281db00a1cc9dc0dba90a53b8740f7c318622 data/castingmb/tags/item/controller_regulators.json
