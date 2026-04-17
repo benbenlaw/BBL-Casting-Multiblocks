@@ -2,6 +2,7 @@ package com.benbenlaw.castingmb.data;
 
 import com.benbenlaw.casting.Casting;
 import com.benbenlaw.casting.block.CastingBlocks;
+import com.benbenlaw.casting.block.custom.CastingBlock;
 import com.benbenlaw.castingmb.block.CastingMBBlocks;
 import com.benbenlaw.castingmb.util.CastingMBTags;
 import net.minecraft.core.HolderLookup;
@@ -30,6 +31,7 @@ public class CastingMBBlockTags extends BlockTagsProvider {
                 .add(CastingMBBlocks.MB_SOLIDIFIER.get())
                 .add(CastingMBBlocks.MB_TANK.get())
                 .add(CastingMBBlocks.MB_BLACK_BRICKS.get())
+                .add(CastingMBBlocks.MB_REGULATOR.get())
         ;
 
         tag(CastingMBTags.Blocks.CONTROLLER_FLOORS)
@@ -37,20 +39,24 @@ public class CastingMBBlockTags extends BlockTagsProvider {
         ;
 
         tag(CastingMBTags.Blocks.CONTROLLER_REGULATORS)
-                .add(CastingMBBlocks.MB_BLACK_BRICKS.get())
+                .add(CastingMBBlocks.MB_REGULATOR.get())
         ;
 
         tag(CastingMBTags.Blocks.CONTROLLER_WALLS)
                 .add(CastingMBBlocks.MB_BLACK_BRICKS.get())
                 .add(CastingMBBlocks.MB_SOLIDIFIER.get())
                 .add(CastingMBBlocks.MB_TANK.get())
-                .add(CastingMBBlocks.MB_CONTROLLER.get());
+                .add(CastingMBBlocks.MB_CONTROLLER.get())
+                .add(CastingBlocks.BLACK_BRICK_GLASS.get())
+                .add(CastingMBBlocks.MB_REGULATOR.get())
+                ;
 
         tag(CastingMBTags.Blocks.CONTROLLER_EXTRA_BLOCKS)
                 .add(CastingMBBlocks.MB_BLACK_BRICKS.get())
                 .add(CastingMBBlocks.MB_SOLIDIFIER.get())
                 .add(CastingMBBlocks.MB_TANK.get())
                 .add(CastingMBBlocks.MB_CONTROLLER.get())
+                .add(CastingMBBlocks.MB_REGULATOR.get())
         ;
 
     }

@@ -223,12 +223,23 @@ public class MBControllerScreen extends AbstractContainerScreen<MBControllerMenu
 
                 FluidRenderingUtils.renderFluidStack(guiGraphics, stack, tankX, layerY, width, fluidHeight, 0, 0);
 
-                if (activeTooltip.isEmpty() && MouseUtil.isMouseOver(mouseX, mouseY, tankX, layerY, width, fluidHeight)) {
-                    activeTooltip = Optional.of(List.of(
-                            stack.getHoverName(),
-                            Component.literal(amount + " / " + totalCapacity + " mB")
-                    ));
+                if (activeTooltip.isEmpty() &&
+                        MouseUtil.isMouseOver(mouseX, mouseY, tankX, layerY, width, fluidHeight)) {
+
+                    List<Component> tooltip = new ArrayList<>();
+
+                    tooltip.add(stack.getHoverName());
+                    tooltip.add(Component.literal(amount + " / " + totalCapacity + " mB"));
+
+                    if (menu.blockEntity.getRegulatorCount() != 0) {
+                        tooltip.add(Component.literal(
+                                "Max " + menu.blockEntity.getRegulatorCount() + " Fluid Types"
+                        ));
+                    }
+
+                    activeTooltip = Optional.of(tooltip);
                 }
+
                 currentYOffset += fluidHeight;
             }
         }

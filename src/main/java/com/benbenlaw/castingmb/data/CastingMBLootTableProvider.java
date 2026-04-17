@@ -34,6 +34,7 @@ public class CastingMBLootTableProvider extends VanillaBlockLoot {
 
         this.dropSelf(CastingMBBlocks.MB_SOLIDIFIER.get());
         this.dropSelf(CastingMBBlocks.MB_BLACK_BRICKS.get());
+        this.dropSelf(CastingMBBlocks.MB_REGULATOR.get());
     }
 
 

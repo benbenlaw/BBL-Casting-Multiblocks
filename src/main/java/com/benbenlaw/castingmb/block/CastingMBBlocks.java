@@ -1,5 +1,6 @@
 package com.benbenlaw.castingmb.block;
 
+import com.benbenlaw.casting.block.custom.CastingBlock;
 import com.benbenlaw.casting.block.custom.ControllerBlock;
 import com.benbenlaw.casting.item.CastingItems;
 import com.benbenlaw.castingmb.CastingMB;
@@ -21,6 +22,12 @@ public class CastingMBBlocks {
 
     public static final DeferredBlock<Block> MB_BLACK_BRICKS = registerBlock("mb_black_bricks",
             properties -> new Block(properties
+                    .strength(1.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+
+    public static final DeferredBlock<Block> MB_REGULATOR = registerBlock("mb_regulator",
+            properties -> new CastingBlock(properties
                     .strength(1.0F)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));

@@ -8,6 +8,9 @@ item_ids:
     - 'castingmb:mb_controller'
     - 'castingmb:mb_solidifier'
     - 'castingmb:mb_tank'
+    - 'castingmb:mb_black_bricks'
+    - 'castingmb:mb_regulator'
+    - 'casting:black_glass'
 
 ---
 
@@ -25,9 +28,20 @@ The Multiblock Solidifier is a solidifier that can be used in the multiblock, it
 ## Multiblock Tank
 The Multiblock Tank is a tank that can be used in the multiblock. You can place as many of these as you want but the controller will always use the hottest fuel tank and Solidifiers will always use the coldest fuel tanks. Can be placed anywhere in the multiblock structure.
 
-## Multiblock Bricks
-Used to fill create the walls and floor of the structure
+## Multiblock Bricks and Glass
+Used to fill create the walls and floor of the structure, Glass can be used to view inside the structure
 
+## Multiblock Regulators
+The Multiblock Regulator is used to regulate the amount of fluid types that the multiblock tank can add. Without regulators the multiblock tank can add any amount of fluid types. For each regulator added will allow you to store an addition fluid type. So with 3 regulators you can store 3 different fluid types in the multiblock tank. The amount of regulators will show when hovering over Multiblock Controller Tank.
+
+## Examples 1
+A simple 3x3x3 multiblock with 27 internal air blocks, so it has 27 item slots and a tank capacity of 27000mb. It has no regulators so it can store any amount of fluid types in the tank.
 <GameScene zoom="3" interactive={true}>
   <ImportStructure src="assets/structures/simple.nbt" />
+</GameScene>
+
+## Example 2
+This multiblock has 3 regulators so it can only store up to 3 different fluid types in the tank.
+<GameScene zoom="3" interactive={true}>
+  <ImportStructure src="assets/structures/simple_regulators.nbt" />
 </GameScene>

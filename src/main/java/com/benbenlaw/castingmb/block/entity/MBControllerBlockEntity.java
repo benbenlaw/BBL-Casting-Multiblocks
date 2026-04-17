@@ -12,10 +12,11 @@ import com.benbenlaw.castingmb.block.entity.handler.MultiFluidResourceHandler;
 import com.benbenlaw.castingmb.network.packets.SyncFuelTanks;
 import com.benbenlaw.castingmb.screen.MBControllerMenu;
 import com.benbenlaw.castingmb.util.CastingMBTags;
+import com.benbenlaw.castingmb.util.MBData;
 import com.benbenlaw.core.block.entity.SyncableBlockEntity;
-import com.benbenlaw.core.block.entity.handler.fluid.InputFluidHandler;
 import com.benbenlaw.core.block.entity.handler.fluid.OutputFluidHandler;
 import com.benbenlaw.core.block.entity.handler.item.InputItemHandler;
+import com.benbenlaw.core.multiblock.CoreMultiblockDetector;
 import com.benbenlaw.core.multiblock.MultiblockData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponentGetter;
@@ -218,14 +219,20 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         outputFluidHandler.clampFluidsToCapacity();
 
         this.regulatorCount = 0;
+
         for (BlockPos pos : cachedMultiblockData.extraBlocks()) {
             BlockState state = level.getBlockState(pos);
+
             if (state.is(CastingMBTags.Blocks.CONTROLLER_REGULATORS)) {
                 regulatorCount++;
             }
         }
 
-        outputFluidHandler.setMaxFluidTypes(1 + regulatorCount);
+        if (regulatorCount > 0) {
+            outputFluidHandler.setMaxFluidTypes(1 + regulatorCount);
+        } else {
+            outputFluidHandler.setMaxFluidTypes(0);
+        }
     }
 
     private void clampItemsToCapacity() {
@@ -300,7 +307,7 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
 
     private void validateMultiblock() {
         assert level != null;
-        var foundData = com.benbenlaw.casting.multiblock.CoreMultiblockDetector.findMultiblock(level, worldPosition, this.getBlockState().getBlock(), wallState -> wallState.is(CastingMBTags.Blocks.CONTROLLER_WALLS),
+        MultiblockData foundData = CoreMultiblockDetector.findMultiblock(level, worldPosition, this.getBlockState().getBlock(), wallState -> wallState.is(CastingMBTags.Blocks.CONTROLLER_WALLS),
                 floorState -> floorState.is(CastingMBTags.Blocks.CONTROLLER_FLOORS), extraValidBlocks -> extraValidBlocks.is(CastingMBTags.Blocks.CONTROLLER_EXTRA_BLOCKS), true, true, 1024, 128, 64);
         this.cachedMultiblockData = foundData;
 
@@ -373,6 +380,11 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         output.putIntArray("progress", progress);
         output.putIntArray("maxProgress", maxProgress);
         output.putInt("temperature", temperature.orElse(Integer.MIN_VALUE));
+        if (cachedMultiblockData != null) {
+            cachedMultiblockData.serialize(output.child("cachedMultiblockData"));
+
+        }
+        output.putInt("regulatorCount", regulatorCount);
         super.saveAdditional(output);
     }
 
@@ -384,6 +396,9 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         this.maxProgress = input.getIntArray("maxProgress").orElse(new int[100]);
         int tempVal = input.getIntOr("temperature", Integer.MIN_VALUE);
         this.temperature = (tempVal == Integer.MIN_VALUE) ? OptionalInt.empty() : OptionalInt.of(tempVal);
+        this.cachedMultiblockData = MBData.from(input.childOrEmpty("cachedMultiblockData"));
+        this.structureDirty = true;
+        this.regulatorCount = input.getIntOr("regulatorCount", 0);
         super.loadAdditional(input);
     }
 
@@ -395,6 +410,8 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
 
     public MultiFluidResourceHandler getOutputFluidHandler() { return outputFluidHandler; }
     public ResourceHandler<FluidResource> getFluidCapability() { return outputFluidHandler; }
+
+    public int getRegulatorCount() { return regulatorCount; }
 
     @Override public @Nullable AbstractContainerMenu createMenu(int id, Inventory inv, Player player) {
         return new MBControllerMenu(id, inv, this.worldPosition, data);
@@ -420,7 +437,7 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         FluidListComponent component = components.get(CastingDataComponents.FLUIDS.get());
         if (component != null) {
             this.outputFluidHandler.setTotalCapacity(Integer.MAX_VALUE);
-            this.outputFluidHandler.setMaxFluidTypes(64);
+            this.outputFluidHandler.setMaxFluidTypes(0);
 
             component.applyToHandlers(outputFluidHandler);
             this.structureDirty = true;

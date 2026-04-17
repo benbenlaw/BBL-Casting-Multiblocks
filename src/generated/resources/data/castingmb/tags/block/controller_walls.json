@@ -3,6 +3,8 @@
     "castingmb:mb_black_bricks",
     "castingmb:mb_solidifier",
     "castingmb:mb_tank",
-    "castingmb:mb_controller"
+    "castingmb:mb_controller",
+    "casting:black_brick_glass",
+    "castingmb:mb_regulator"
   ]
 }

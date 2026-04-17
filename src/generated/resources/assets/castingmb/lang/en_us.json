@@ -1,6 +1,7 @@
 {
   "block.castingmb.mb_black_bricks": "Multiblock Bricks",
   "block.castingmb.mb_controller": "Casting Multiblock Controller",
+  "block.castingmb.mb_regulator": "Multiblock Regulator",
   "block.castingmb.mb_solidifier": "Casting Multiblock Solidifier",
   "block.castingmb.mb_tank": "Casting Multiblock Tank",
   "itemGroup.castingmb": "Casting - Multiblocks",

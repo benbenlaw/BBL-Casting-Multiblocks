@@ -37,7 +37,7 @@ public class CastingMBItemTags extends ItemTagsProvider {
         ;
 
         tag(CastingMBTags.Items.CONTROLLER_REGULATORS)
-                .add(CastingMBBlocks.MB_BLACK_BRICKS.get().asItem())
+                .add(CastingMBBlocks.MB_REGULATOR.get().asItem())
         ;
 
         tag(CastingMBTags.Items.CONTROLLER_WALLS)
@@ -52,6 +52,7 @@ public class CastingMBItemTags extends ItemTagsProvider {
                 .add(CastingMBBlocks.MB_SOLIDIFIER.get().asItem())
                 .add(CastingMBBlocks.MB_TANK.get().asItem())
                 .add(CastingMBBlocks.MB_CONTROLLER.get().asItem())
+                .add(CastingMBBlocks.MB_REGULATOR.get().asItem())
         ;
 
     }

@@ -18,6 +18,7 @@ import com.benbenlaw.casting.screen.SolidifierScreen;
 import com.benbenlaw.castingmb.block.CastingMBBlockEntities;
 import com.benbenlaw.castingmb.block.CastingMBBlocks;
 import com.benbenlaw.castingmb.block.CastingMBCapabilities;
+import com.benbenlaw.castingmb.block.entity.renderer.MBControllerBlockEntityRenderer;
 import com.benbenlaw.castingmb.block.entity.renderer.MBTankBlockEntityRenderer;
 import com.benbenlaw.castingmb.block.entity.renderer.MBTankSpecialRenderer;
 import com.benbenlaw.castingmb.item.CastingMBCreativeModeTab;
@@ -81,6 +82,7 @@ public class CastingMB {
         @SubscribeEvent
         public static void registerRenderers(final EntityRenderersEvent.RegisterRenderers event) {
             event.registerBlockEntityRenderer(CastingMBBlockEntities.MB_TANK_BLOCK_ENTITY.get(), MBTankBlockEntityRenderer::new);
+            event.registerBlockEntityRenderer(CastingMBBlockEntities.MB_CONTROLLER_BLOCK_ENTITY.get(), MBControllerBlockEntityRenderer::new);
         }
 
         @SubscribeEvent

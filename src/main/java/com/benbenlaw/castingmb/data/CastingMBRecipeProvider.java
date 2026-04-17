@@ -53,6 +53,9 @@ public class CastingMBRecipeProvider extends RecipeProvider {
         shapeless(RecipeCategory.MISC, CastingMBBlocks.MB_CONTROLLER).requires(CastingMBBlocks.MB_CONTROLLER).unlockedBy("has_mb_controller", has(CastingMBBlocks.MB_CONTROLLER)).save(output);
         shapeless(RecipeCategory.MISC, CastingMBBlocks.MB_TANK).requires(CastingMBBlocks.MB_TANK).unlockedBy("has_mb_tank", has(CastingMBBlocks.MB_TANK)).save(output);
 
+        simpleSolidifierRecipe(CastingMBBlocks.MB_REGULATOR, getFluidIngredient("molten_black_brick", 1000),
+                CastingMBBlocks.MB_BLACK_BRICKS, "black_brick/mb_regulator", ResourceType.STORAGE_BLOCKS, getTempFromFluid("molten_black_brick"));
+
         simpleSolidifierRecipe(CastingMBBlocks.MB_BLACK_BRICKS, getFluidIngredient("molten_black_brick", 1000),
                 CastingBlocks.BLACK_BRICKS, "black_brick/mb_black_brick", ResourceType.STORAGE_BLOCKS, getTempFromFluid("molten_black_brick"));
 

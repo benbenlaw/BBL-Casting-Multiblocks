@@ -1,10 +1,12 @@
-// 26.1.2	2026-04-15T10:47:01.2104671	Model Definitions - castingmb
+// 26.1.2	2026-04-17T16:14:39.7388859	Model Definitions - castingmb
 e9f43f12d19c8768a17e1cebc76304d8b591cf5a assets/castingmb/blockstates/mb_black_bricks.json
 d2ae31fc8a7c22ae4af1cbdfe1a9871ec7704fe7 assets/castingmb/blockstates/mb_controller.json
+4e45c5868d153d101b1cbb1aae878c3bbcde31fc assets/castingmb/blockstates/mb_regulator.json
 2b4958e4b67ec8c4cbd5e54da5afe289cb8b81a8 assets/castingmb/blockstates/mb_solidifier.json
 1878547a260fc56bb68bf24f9094af346dffcad0 assets/castingmb/blockstates/mb_tank.json
 e77876d4eb18c353a45e1fc99d80b9760a9ab093 assets/castingmb/items/mb_black_bricks.json
 b0597e099fcaf61697bed43d840f036ce27c6c49 assets/castingmb/items/mb_controller.json
+545400ddab8ae79dc2ead4db438921dc2c4a9802 assets/castingmb/items/mb_regulator.json
 523eab3ee2ee45d3e86c415f60507cf11195e981 assets/castingmb/items/mb_solidifier.json
 2d1df1737c125fad161cf63778c7ce065c6b09bd assets/castingmb/items/mb_tank.json
 d561a662b702f5c7fa1c072bee45491906f7db2c assets/castingmb/models/block/mb_black_bricks.json
@@ -12,6 +14,10 @@ d561a662b702f5c7fa1c072bee45491906f7db2c assets/castingmb/models/block/mb_black_
 9babd5ef2f6bd22619fde2f5aa12a1e65f7ff095 assets/castingmb/models/block/mb_controller_vertical.json
 bce323a8c19f42216656869a6a9513de25176b55 assets/castingmb/models/block/mb_controller_working.json
 248d040dfa7bd0182387d944b3ca2da7f6e44ec2 assets/castingmb/models/block/mb_controller_working_vertical.json
+1b1028addeb822d7fa2a1287940d618c1f004b2b assets/castingmb/models/block/mb_regulator.json
+310b2efcc362fd2e7039d8f776b8804e773bdfa0 assets/castingmb/models/block/mb_regulator_vertical.json
+be2a91e2e131c899e14128400944b05a25869f64 assets/castingmb/models/block/mb_regulator_working.json
+356879b2da7b72d71af27a253290af5d2b36ab37 assets/castingmb/models/block/mb_regulator_working_vertical.json
 819067fab47a56636af5b3191231ce9daaa1e707 assets/castingmb/models/block/mb_solidifier.json
 c105a8dc91e845c9eb1f359ead0dadd70aeef760 assets/castingmb/models/block/mb_solidifier_vertical.json
 880ee67802a9757dd9af1b2299c0c46c989889da assets/castingmb/models/block/mb_solidifier_working.json

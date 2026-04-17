@@ -43,25 +43,27 @@ public class MultiFluidResourceHandler extends OutputFluidHandler {
 
     @Override
     public int insert(int index, FluidResource resource, int amount, TransactionContext transaction) {
-        // 1. Basic Validation
-        if (resource.isEmpty() || amount <= 0 || index >= maxFluidTypes) return 0;
+        // 1. Basic validation
+        if (resource.isEmpty() || amount <= 0) return 0;
 
-        // 2. Multiblock Capacity Check
+        // 2. Type limit check (0 or negative = unlimited)
+        if (this.maxFluidTypes > 0 && index >= this.maxFluidTypes) return 0;
+
+        // 3. Capacity check
         int currentTotal = getTotalFluidAmount();
         int spaceLeft = Math.max(0, this.totalCapacity - currentTotal);
         int actualToInsert = Math.min(amount, spaceLeft);
 
         if (actualToInsert <= 0) return 0;
 
-        // 3. Resource Validation (The "getStack" equivalent for Transfer API)
+        // 4. Resource validation
         FluidResource existingResource = getResource(index);
 
-        // If the slot isn't empty AND it's a different fluid, we can't insert here
         if (!existingResource.isEmpty() && !existingResource.equals(resource)) {
             return 0;
         }
 
-        // 4. Perform the actual insertion using the super class
+        // 5. Delegate to parent
         return super.insert(index, resource, actualToInsert, transaction);
     }
 
