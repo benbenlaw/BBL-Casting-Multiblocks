@@ -1,9 +1,6 @@
 package com.benbenlaw.castingmb.data;
 
 
-import com.benbenlaw.casting.Casting;
-import com.benbenlaw.casting.data.*;
-import com.benbenlaw.casting.data.CastingBlockTags;
 import com.benbenlaw.castingmb.CastingMB;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.DataGenerator;
@@ -35,7 +32,6 @@ public class CastingMBDataGenerators {
         generator.addProvider(true, new CastingMBLangProvider(packOutput));
         generator.addProvider(true, new LootTableProvider(packOutput, Collections.emptySet(),
                 List.of(new LootTableProvider.SubProviderEntry(CastingMBLootTableProvider::new, LootContextParamSets.BLOCK)), lookupProvider));
-        generator.addProvider(true, new CastingModelProvider(packOutput));
 
         //Recipes
         generator.addProvider(true, new CastingMBRecipeProvider.Runner(packOutput, lookupProvider));

@@ -231,7 +231,7 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         if (regulatorCount > 0) {
             outputFluidHandler.setMaxFluidTypes(1 + regulatorCount);
         } else {
-            outputFluidHandler.setMaxFluidTypes(0);
+            outputFluidHandler.setMaxFluidTypes(100);
         }
     }
 
