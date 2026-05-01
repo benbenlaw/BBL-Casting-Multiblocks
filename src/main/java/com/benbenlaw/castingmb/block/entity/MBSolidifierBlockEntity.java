@@ -4,6 +4,7 @@ import com.benbenlaw.casting.block.custom.CastingBlock;
 import com.benbenlaw.casting.block.entity.FluidAccepting;
 import com.benbenlaw.casting.block.entity.TankBlockEntity;
 import com.benbenlaw.casting.recipe.custom.SolidifierRecipe;
+import com.benbenlaw.casting.util.CastingTags;
 import com.benbenlaw.castingmb.block.CastingMBBlockEntities;
 import com.benbenlaw.castingmb.block.custom.MBSolidifierBlock;
 import com.benbenlaw.castingmb.network.packets.SyncFuelTanks;
@@ -293,7 +294,6 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
         var controllerHandler = controller.getOutputFluidHandler();
 
         try (Transaction tx = Transaction.open(null)) {
-            // 1. Extract Molten Metal from the Controller (using recipe.fluid().amount())
             boolean metalExtracted = false;
             for (int i = 0; i < controllerHandler.size(); i++) {
                 FluidStack inTank = FluidUtil.getStack(controllerHandler, i);
@@ -305,21 +305,22 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
             }
 
             if (metalExtracted) {
-                // 2. Handle Fuel Consumption if a tank is present
+
+                if (!inputHandler.getResource(0).is(CastingTags.Items.MOLDS)) {
+                    inputHandler.extractInternal(0, ItemResource.of(ItemUtil.getStack(inputHandler, 0)), recipe.mold().count(), tx);
+                }
+
                 if (coolantTank != null) {
                     var coolantHandler = coolantTank.getInputFluidHandler();
                     FluidStack fuelStack = FluidUtil.getStack(coolantHandler, 0);
 
-                    // Get the Fuel Recipe to know how much to drain
                     var fuelRecipeHolder = TankBlockEntity.getFuel(level, fuelStack);
                     if (fuelRecipeHolder != null) {
-                        // DRAIN THE EXACT AMOUNT FROM THE FUEL RECIPE
                         int amountToDrain = fuelRecipeHolder.value().fluid().amount();
                         coolantHandler.extractInternal(0, FluidResource.of(fuelStack), amountToDrain, tx);
                     }
                 }
 
-                // 3. Insert Result Item
                 ItemStack result = getStackFromSized(recipe.output());
                 if (!result.isEmpty()) {
                     outputHandler.insertInternal(0, ItemResource.of(result), result.getCount(), tx);
