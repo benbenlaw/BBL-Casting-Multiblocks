@@ -32,7 +32,7 @@ public class CastingMBLootTableProvider extends VanillaBlockLoot {
         this.dropWithFluidComponent(CastingMBBlocks.MB_CONTROLLER.get());
         this.dropWithFluidComponent(CastingMBBlocks.MB_TANK.get());
 
-        this.dropSelf(CastingMBBlocks.MB_SOLIDIFIER.get());
+        this.dropWithMolds(CastingMBBlocks.MB_SOLIDIFIER.get());
         this.dropSelf(CastingMBBlocks.MB_BLACK_BRICKS.get());
         this.dropSelf(CastingMBBlocks.MB_REGULATOR.get());
     }
@@ -45,6 +45,15 @@ public class CastingMBLootTableProvider extends VanillaBlockLoot {
                         .add(LootItem.lootTableItem(block)
                                 .apply(CopyComponentsFunction.copyComponentsFromBlockEntity(LootContextParams.BLOCK_ENTITY)
                                         .include(CastingDataComponents.FLUIDS.get())))));
+    }
+
+    private void dropWithMolds(Block block) {
+        this.add(block, LootTable.lootTable()
+                .withPool(LootPool.lootPool()
+                        .setRolls(ConstantValue.exactly(1))
+                        .add(LootItem.lootTableItem(block)
+                                .apply(CopyComponentsFunction.copyComponentsFromBlockEntity(LootContextParams.BLOCK_ENTITY)
+                                        .include(CastingDataComponents.STORED_MOLDS.get())))));
     }
 
     @Override

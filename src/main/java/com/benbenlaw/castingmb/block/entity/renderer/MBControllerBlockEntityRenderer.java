@@ -42,8 +42,15 @@ public class MBControllerBlockEntityRenderer
             ModelFeatureRenderer.CrumblingOverlay overlay
     ) {
         BlockEntityRenderer.super.extractRenderState(be, state, partialTick, cameraPos, overlay);
-        if (be.getLevel() == null || be.cachedMultiblockData == null) return;
 
+        state.fluids.clear();
+        state.innerBounds = null;
+        state.tankCapacity = 0;
+        state.controllerPos = be.getBlockPos();
+
+        if (be.getLevel() == null || be.cachedMultiblockData == null) {
+            return;
+        }
         state.lightCoords = LevelRenderer.getLightCoords(be.getLevel(), be.getBlockPos());
         MultiblockData data = be.cachedMultiblockData;
 

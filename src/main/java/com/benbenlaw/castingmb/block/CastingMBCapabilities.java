@@ -17,7 +17,7 @@ public class CastingMBCapabilities {
 
         //MB Solidifier
         event.registerBlockEntity(Capabilities.Item.BLOCK, CastingMBBlockEntities.MB_SOLIDIFIER_BLOCK_ENTITY.get(),
-                (blockEntity, side) -> blockEntity.getItemCapability());
+                (blockEntity, side) -> blockEntity.getItemHandler());
 
         //MB Tank
         event.registerBlockEntity(Capabilities.Fluid.BLOCK, CastingMBBlockEntities.MB_TANK_BLOCK_ENTITY.get(),

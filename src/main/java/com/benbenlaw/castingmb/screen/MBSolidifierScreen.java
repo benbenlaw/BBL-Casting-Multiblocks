@@ -1,12 +1,14 @@
 package com.benbenlaw.castingmb.screen;
 
 import com.benbenlaw.casting.Casting;
+import com.benbenlaw.casting.network.packet.ChangeMoldPagePacket;
 import com.benbenlaw.castingmb.block.entity.MBTankBlockEntity;
 import com.benbenlaw.core.Core;
 import com.benbenlaw.core.screen.util.DurationTooltip;
 import com.benbenlaw.core.screen.util.FluidRenderingUtils;
 import com.benbenlaw.core.util.MouseUtil;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
@@ -15,11 +17,15 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.transfer.ResourceHandler;
 import net.neoforged.neoforge.transfer.fluid.FluidResource;
 import net.neoforged.neoforge.transfer.fluid.FluidStacksResourceHandler;
 import net.neoforged.neoforge.transfer.fluid.FluidUtil;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.neoforged.neoforge.transfer.item.ItemUtil;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -31,8 +37,84 @@ public class MBSolidifierScreen extends AbstractContainerScreen<MBSolidifierMenu
     private static final Identifier TEXTURE = Casting.identifier("textures/gui/solidifier_gui.png");
     private static final Identifier PROGRESS_ARROW = Core.identifier("progress_arrow");
 
+    private final List<ItemStack> molds = new ArrayList<>();
+    private final List<Integer> moldSlotIndices = new ArrayList<>();
+    private int page = 0;
+
     public MBSolidifierScreen(MBSolidifierMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+
+        int x = (width - imageWidth) / 2;
+        int y = (height - imageHeight) / 2;
+
+        populateMolds();
+        ItemStack currentInput = ItemUtil.getStack(
+                menu.blockEntity.getItemHandler(), 0);
+        if (!currentInput.isEmpty()) {
+            for (int i = 0; i < molds.size(); i++) {
+                if (ItemStack.isSameItemSameComponents(molds.get(i), currentInput)) {
+                    page = i;
+                    break;
+                }
+            }
+        }
+
+        addRenderableWidget(Button.builder(Component.literal("<"), b -> {
+            int max = menu.getMaxMoldPage();
+
+            page--;
+            if (page < 0) page = max;
+
+            ClientPacketDistributor.sendToServer(
+                    new ChangeMoldPagePacket(menu.blockEntity.getBlockPos(), page)
+            );
+
+            menu.setMoldPage(page);
+        }).bounds(x + 32, y + 54, 10, 10).build());
+
+        addRenderableWidget(Button.builder(Component.literal(">"), b -> {
+            int max = menu.getMaxMoldPage();
+
+            page++;
+            if (page > max) page = 0;
+
+            ClientPacketDistributor.sendToServer(
+                    new ChangeMoldPagePacket(menu.blockEntity.getBlockPos(), page)
+            );
+
+            menu.setMoldPage(page);
+        }).bounds(x + 134, y + 54, 10, 10).build());
+
+
+    }
+
+    public void populateMolds() {
+        ResourceHandler<ItemResource> moldHandler = menu.blockEntity.getStoredMolds();
+
+        molds.clear();
+        moldSlotIndices.clear();
+
+        for (int i = 0; i < moldHandler.size(); i++) {
+            ItemStack stack = ItemUtil.getStack(moldHandler, i);
+            if (!stack.isEmpty()) {
+                molds.add(stack);
+                moldSlotIndices.add(i);
+            }
+        }
+
+        if (molds.isEmpty()) {
+            page = 0;
+            return;
+        }
+
+        if (page >= molds.size()) {
+            page = 0;
+        }
     }
 
     @Override
@@ -45,7 +127,7 @@ public class MBSolidifierScreen extends AbstractContainerScreen<MBSolidifierMenu
         guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, x, y, 0, 0, imageWidth, imageHeight, 256, 256);
 
         if (menu.isCrafting()) {
-            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, PROGRESS_ARROW, 24, 16, 0, 0, x + 76, y + 34, menu.getScaledProgress() + 1, 16);
+            guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, PROGRESS_ARROW, 24, 16, 0, 0, x + 76, y + 19, menu.getScaledProgress() + 1, 16);
         }
 
         renderControllerTank(guiGraphics, x + 8, y + 44, 16, 23, mouseX, mouseY, false);

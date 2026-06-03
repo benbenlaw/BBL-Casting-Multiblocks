@@ -4,6 +4,7 @@ import com.benbenlaw.casting.block.entity.SolidifierBlockEntity;
 import com.benbenlaw.casting.screen.CastingMenuTypes;
 import com.benbenlaw.casting.util.CastingTags;
 import com.benbenlaw.castingmb.block.entity.MBSolidifierBlockEntity;
+import com.benbenlaw.castingmb.screen.util.PagedMoldSlot;
 import com.benbenlaw.core.screen.SimpleAbstractContainerMenu;
 import com.benbenlaw.core.screen.util.slot.FilterFluidSlot;
 import com.benbenlaw.core.screen.util.slot.InputSlot;
@@ -23,18 +24,21 @@ import net.neoforged.neoforge.transfer.fluid.FluidUtil;
 
 public class MBSolidifierMenu extends SimpleAbstractContainerMenu {
 
-    protected MBSolidifierBlockEntity blockEntity;
+    public MBSolidifierBlockEntity blockEntity;
     protected Level level;
     protected ContainerData data;
     protected Player player;
     protected BlockPos blockPos;
+
+    private int moldPage = 0;
+    private static final int MOLDS_PER_PAGE = 5;
 
     public MBSolidifierMenu(int containerID, Inventory inventory, FriendlyByteBuf extraData) {
         this(containerID, inventory, extraData.readBlockPos(), new SimpleContainerData(4));
     }
 
     public MBSolidifierMenu(int containerID, Inventory inventory, BlockPos blockPos, ContainerData data) {
-        super(CastingMBMenuTypes.MB_SOLIDIFIER_MENU.get(), containerID, inventory, blockPos, 2);
+        super(CastingMBMenuTypes.MB_SOLIDIFIER_MENU.get(), containerID, inventory, blockPos, 7);
         this.player = inventory.player;
         this.blockPos = blockPos;
         this.level = inventory.player.level();
@@ -42,7 +46,7 @@ public class MBSolidifierMenu extends SimpleAbstractContainerMenu {
         this.blockEntity = (MBSolidifierBlockEntity) this.level.getBlockEntity(blockPos);
 
         assert blockEntity != null;
-        this.addSlot(new InputSlot(blockEntity.getInputHandler(), blockEntity.getInputHandler()::set, 0, 44, 35) {
+        this.addSlot(new InputSlot(blockEntity.getItemHandler(), blockEntity.getItemHandler()::set, 0, 44, 20) {
             @Override
             public int getMaxStackSize(ItemStack stack) {
                 int maxStackSize = 64;
@@ -53,11 +57,16 @@ public class MBSolidifierMenu extends SimpleAbstractContainerMenu {
             }
         });
 
-        SimpleContainer fluidFilterContainer = new SimpleContainer(1);
-        this.addSlot(new FilterFluidSlot(fluidFilterContainer, blockEntity.getFilterFluidHandler(), 0, 8, 20));
+        for (int i = 0; i < 5; i++) {
+            this.addSlot(new PagedMoldSlot(
+                    this,
+                    i,
+                    44 + i * 18,
+                    51
+            ));
+        }
 
-
-        this.addSlot(new ResultSlot(blockEntity.getOutputHandler(), blockEntity.getOutputHandler()::set, 0, 116, 35));
+        this.addSlot(new ResultSlot(blockEntity.getItemHandler(), blockEntity.getItemHandler()::set, 1, 116, 20));
 
         addDataSlots(data);
     }
@@ -93,5 +102,18 @@ public class MBSolidifierMenu extends SimpleAbstractContainerMenu {
         int progressArrowSize = 24;
 
         return maxProgress != 0 && progress != 0 ? progress * progressArrowSize / maxProgress : 0;
+    }
+
+    public int getMaxMoldPage() {
+        int size = blockEntity.getStoredMolds().size();
+        return Math.max(0, (size - 1) / MOLDS_PER_PAGE);
+    }
+
+    public void setMoldPage(int page) {
+        this.moldPage = Math.max(0, Math.min(page, getMaxMoldPage()));
+    }
+
+    public int getMoldPage() {
+        return moldPage;
     }
 }
