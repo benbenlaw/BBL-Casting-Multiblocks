@@ -10,7 +10,7 @@ item_ids:
     - 'castingmb:mb_tank'
     - 'castingmb:mb_black_bricks'
     - 'castingmb:mb_regulator'
-    - 'casting:black_glass'
+    - 'casting:black_brick_glass'
 
 ---
 
