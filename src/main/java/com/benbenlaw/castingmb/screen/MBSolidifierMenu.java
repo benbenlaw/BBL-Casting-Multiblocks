@@ -87,8 +87,8 @@ public class MBSolidifierMenu extends SimpleAbstractContainerMenu {
                 }
                 return;
             }
-            super.clicked(slotId, button, clickType, player);
         }
+        super.clicked(slotId, button, clickType, player);
     }
 
     public boolean isCrafting() {
