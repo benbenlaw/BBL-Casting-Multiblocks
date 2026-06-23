@@ -23,7 +23,7 @@ public class CastingMBLangProvider extends LanguageProvider {
         add("block.castingmb.mb_controller", "Casting Multiblock Controller");
         add("block.castingmb.mb_solidifier", "Casting Multiblock Solidifier");
         add("block.castingmb.mb_tank", "Casting Multiblock Tank");
-        add("block.castingmb.mb_black_bricks", "Multiblock Bricks");
+        add("block.castingmb.mb_black_bricks", "Multiblock Black Bricks");
         add("block.castingmb.mb_regulator", "Multiblock Regulator");
 
         //Tooltips

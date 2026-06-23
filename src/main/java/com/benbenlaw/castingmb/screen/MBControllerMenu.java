@@ -46,8 +46,8 @@ public class MBControllerMenu extends SimpleAbstractContainerMenu {
 
         if (blockEntity != null) {
             for (int i = 0; i < 100; i++) {
-                this.addSlot(new InputSlot(blockEntity.getInputHandler(),
-                        blockEntity.getInputHandler()::set, i, -2000, -2000).size(1));
+                this.addSlot(new InputSlot(blockEntity.getItemHandler(),
+                        blockEntity.getItemHandler()::set, i, -2000, -2000).size(1));
             }
         }
     }

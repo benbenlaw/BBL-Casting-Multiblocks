@@ -9,14 +9,13 @@ import com.benbenlaw.casting.recipe.custom.SolidifierRecipe;
 import com.benbenlaw.casting.util.CastingTags;
 import com.benbenlaw.castingmb.block.CastingMBBlockEntities;
 import com.benbenlaw.castingmb.block.custom.MBSolidifierBlock;
+import com.benbenlaw.castingmb.block.entity.handler.DynamicInputItemHandler;
+import com.benbenlaw.castingmb.block.entity.handler.MultiFluidResourceHandler;
 import com.benbenlaw.castingmb.network.packets.SyncFuelTanks;
 import com.benbenlaw.castingmb.screen.MBSolidifierMenu;
 import com.benbenlaw.core.block.entity.SyncableBlockEntity;
 import com.benbenlaw.core.block.entity.handler.fluid.FilterFluidHandler;
-import com.benbenlaw.core.block.entity.handler.fluid.InputFluidHandler;
-import com.benbenlaw.core.block.entity.handler.item.CombinedItemHandler;
-import com.benbenlaw.core.block.entity.handler.item.InputItemHandler;
-import com.benbenlaw.core.block.entity.handler.item.OutputItemHandler;
+import com.benbenlaw.core.block.entity.handler.fluid.SyncableFluidHandler;
 import com.benbenlaw.core.block.entity.handler.item.SyncableItemHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
@@ -144,7 +143,6 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
         ItemStack inputStack = ItemUtil.getStack(inventory, INPUT_SLOT);
         RecipeHolder<SolidifierRecipe> recipeHolder = getRecipe();
 
-        // 1. Check Bucket Filling logic using Controller Fluid
         if (canFillBucket(inputStack)) {
             isCurrentlyWorking = true;
             maxProgress = 20;
@@ -156,7 +154,7 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
                 progress = 0;
             }
         }
-        // 2. Check Recipe Solidifying logic
+
         else if (recipeHolder != null) {
             SolidifierRecipe recipe = recipeHolder.value();
 
@@ -181,9 +179,8 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
 
                 if (progress >= maxProgress) {
                     if (coolantTank != null) {
-                        FluidStack coolantStack = FluidUtil.getStack(coolantTank.getInputFluidHandler(), 0);
-                        // Ensure there is enough fluid left to complete the craft
-                        if (coolantStack.getAmount() >= 100) { // Matches fuelUsage above
+                        FluidStack coolantStack = FluidUtil.getStack(coolantTank.getFluidHandler(), 0);
+                        if (coolantStack.getAmount() >= 100) {
                             executeSolidifying(recipe);
                             progress = 0;
                             setChanged();
@@ -210,12 +207,10 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
     public @Nullable MBControllerBlockEntity getController() {
         if (level == null) return null;
 
-        // 1. Return cached if valid
         if (cachedController != null && !cachedController.isRemoved()) {
             return cachedController;
         }
 
-        // 2. ONLY use the synced position. Do NOT scan neighbors here.
         if (controllerPos != null) {
             if (level.getBlockEntity(controllerPos) instanceof MBControllerBlockEntity controller) {
                 this.cachedController = controller;
@@ -259,7 +254,7 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
         MBControllerBlockEntity controller = getController();
         if (controller == null || !inputStack.is(Items.BUCKET)) return false;
 
-        var handler = controller.getOutputFluidHandler();
+        var handler = controller.getFluidHandler();
 
         for (int i = 0; i < handler.size(); i++) {
             FluidStack fluid = FluidUtil.getStack(handler, i);
@@ -286,21 +281,28 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
         MBControllerBlockEntity controller = getController();
         if (controller == null) return;
 
-        var handler = controller.getOutputFluidHandler();
+        MultiFluidResourceHandler handler = (MultiFluidResourceHandler) controller.getFluidHandler();
+
         for (int i = 0; i < handler.size(); i++) {
             FluidStack fluid = FluidUtil.getStack(handler, i);
             ItemStack fullBucket = new ItemStack(fluid.getFluid().getBucket());
 
             if (fluid.getAmount() >= 1000 && !fullBucket.is(Items.AIR)) {
 
-                inventory.runInternal(() -> {
-                    try (Transaction tx = Transaction.openRoot()) {
-                        handler.extract(0, FluidResource.of(fluid), 1000, tx);
+                try (Transaction tx = Transaction.openRoot()) {
+                    inventory.runInternal(() -> {
                         inventory.extract(INPUT_SLOT, ItemResource.of(new ItemStack(Items.BUCKET)), 1, tx);
                         inventory.insert(OUTPUT_SLOT, ItemResource.of(fullBucket), 1, tx);
-                        tx.commit();
-                    }
-                });
+                    });
+
+                    handler.runInternal(() -> {
+                        handler.extract(0, FluidResource.of(fluid), 1000, tx);
+                    });
+
+                    tx.commit();
+
+                }
+
             }
         }
     }
@@ -311,14 +313,15 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
 
         if (controller == null) return;
 
-        var controllerHandler = controller.getOutputFluidHandler();
+        MultiFluidResourceHandler handler = (MultiFluidResourceHandler) controller.getFluidHandler();
 
         try (Transaction tx = Transaction.open(null)) {
             boolean metalExtracted = false;
-            for (int i = 0; i < controllerHandler.size(); i++) {
-                FluidStack inTank = FluidUtil.getStack(controllerHandler, i);
+            for (int i = 0; i < handler.size(); i++) {
+                FluidStack inTank = FluidUtil.getStack(handler, i);
                 if (recipe.fluid().ingredient().test(inTank)) {
-                    controllerHandler.extract(i, FluidResource.of(inTank), recipe.fluid().amount(), tx);
+                    int finalI = i;
+                    handler.runInternal(() -> handler.extract(finalI, FluidResource.of(inTank), recipe.fluid().amount(), tx));
                     metalExtracted = true;
                     break;
                 }
@@ -330,23 +333,21 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
 
                 if (!moldStack.is(CastingTags.Items.MOLDS)) {
                     inventory.runInternal(() -> {
-                        inventory.extract(
-                                INPUT_SLOT,
-                                ItemResource.of(moldStack),
-                                recipe.mold().count(),
-                                tx
-                        );
+                        inventory.extract(INPUT_SLOT, ItemResource.of(moldStack), recipe.mold().count(), tx);
                     });
                 }
 
                 if (coolantTank != null) {
-                    var coolantHandler = coolantTank.getInputFluidHandler();
+                    SyncableFluidHandler coolantHandler = (SyncableFluidHandler) coolantTank.getFluidHandler();
                     FluidStack fuelStack = FluidUtil.getStack(coolantHandler, 0);
 
                     var fuelRecipeHolder = TankBlockEntity.getFuel(level, fuelStack);
                     if (fuelRecipeHolder != null) {
-                        int amountToDrain = fuelRecipeHolder.value().fluid().amount();
-                        coolantHandler.extractInternal(0, FluidResource.of(fuelStack), amountToDrain, tx);
+
+                        coolantHandler.runInternal(() -> {
+                            int amountToDrain = fuelRecipeHolder.value().fluid().amount();
+                            coolantHandler.extract(0, FluidResource.of(fuelStack), amountToDrain, tx);
+                        });
                     }
                 }
 
@@ -366,7 +367,7 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
         MBControllerBlockEntity controller = getController();
         if (controller == null) return false;
 
-        var handler = controller.getOutputFluidHandler();
+        var handler = controller.getFluidHandler();
         for (int i = 0; i < handler.size(); i++) {
             FluidStack inTank = FluidUtil.getStack(handler, i);
             if (!inTank.isEmpty() && recipe.fluid().ingredient().test(inTank) && inTank.getAmount() >= recipe.fluid().amount()) {
@@ -383,9 +384,8 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
         ItemStack mold = ItemUtil.getStack(inventory, INPUT_SLOT);
         if (mold.isEmpty()) return null;
 
-        // Get the filter resource
         FluidResource filterResource = filterFluidHandler.getResource(0);
-        var handler = controller.getOutputFluidHandler();
+        var handler = controller.getFluidHandler();
         var recipes = level.getServer().getRecipeManager().recipeMap().values().stream()
                 .filter(holder -> holder.value().getType() == SolidifierRecipe.TYPE)
                 .map(holder -> (RecipeHolder<SolidifierRecipe>) holder)
@@ -395,7 +395,6 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
             FluidStack fluid = FluidUtil.getStack(handler, i);
             if (fluid.isEmpty()) continue;
 
-            // FILTER CHECK: If filter is not blank, the fluid must match the filter
             if (!filterResource.isEmpty() && !FluidStack.isSameFluidSameComponents(fluid, filterResource.toStack(1))) {
                 continue;
             }
@@ -512,10 +511,14 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
         }
 
         MBControllerBlockEntity controller = getController();
-        if (controller != null) {
-            return FluidUtil.interactWithFluidHandler(player, hand, controller.getBlockPos(), controller.getOutputFluidHandler());
+
+        try (Transaction tx = Transaction.open(null)) {
+            boolean result = FluidUtil.interactWithFluidHandler(player, hand, this.worldPosition, controller.getFluidHandler(), tx);
+            if (result) {
+                tx.commit();
+            }
+            return result;
         }
-        return false;
     }
 
     @Override
@@ -556,19 +559,17 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
     public SyncableItemHandler getStoredMolds() { return storedMolds; }
 
     @Override
-    public InputFluidHandler receivingHandler() {
+    public SyncableFluidHandler receivingHandler() {
         MBControllerBlockEntity controller = getController();
         if (controller == null) return null;
 
-        var controllerHandler = controller.getOutputFluidHandler();
+        var controllerHandler = controller.getFluidHandler();
 
-        return new InputFluidHandler(this, 1, controllerHandler.getCapacityAsInt(0, FluidResource.EMPTY), (i, s) -> true) {
+        return new SyncableFluidHandler(this, 1, controllerHandler.getCapacityAsInt(0, FluidResource.EMPTY), (i, s) -> true, i -> i == 1) {
             @Override
             public int insert(int index, FluidResource resource, int amount, TransactionContext transaction) {
-                // DIRECT call to the controller handler, avoiding any "capability" lookups
-                // that might loop back to the Solidifier.
                 for (int i = 0; i < controllerHandler.size(); i++) {
-                    int inserted = controllerHandler.insertInternal(i, resource, amount, transaction);
+                    int inserted = controllerHandler.insert(i, resource, amount, transaction);
                     if (inserted > 0) return inserted;
                 }
                 return 0;
@@ -582,7 +583,14 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
     }
 
     @Override
-    public @Nullable FilterFluidHandler getFilter() { return filterFluidHandler; }
+    public @Nullable SyncableFluidHandler getFilter() {
+        return FluidAccepting.super.getFilter();
+    }
+
+    @Override
+    public int[] acceptingTanks() {
+        return new int[0];
+    }
 
     @Override
     public @Nullable AbstractContainerMenu createMenu(int container, @NonNull Inventory inventory, @NonNull Player player) {

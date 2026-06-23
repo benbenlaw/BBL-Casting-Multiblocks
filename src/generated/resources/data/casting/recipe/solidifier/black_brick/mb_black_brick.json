@@ -8,10 +8,10 @@
   "melting_temp": 1000,
   "mold": {
     "count": 1,
-    "ingredient": "castingmb:mb_black_bricks"
+    "ingredient": "casting:black_bricks"
   },
   "output": {
     "count": 1,
-    "ingredient": "castingmb:mb_regulator"
+    "ingredient": "castingmb:mb_black_bricks"
   }
 }

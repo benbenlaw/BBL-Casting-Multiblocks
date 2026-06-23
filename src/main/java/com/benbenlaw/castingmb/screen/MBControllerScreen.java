@@ -156,10 +156,10 @@ public class MBControllerScreen extends AbstractContainerScreen<MBControllerMenu
         if (fuelTankPos != null && menu.level.isLoaded(fuelTankPos)) {
             var be = menu.level.getBlockEntity(fuelTankPos);
             if (be instanceof MBTankBlockEntity tankBlockEntity) {
-                FluidStack fuelStack = FluidUtil.getStack(tankBlockEntity.getInputFluidHandler(), 0);
+                FluidStack fuelStack = FluidUtil.getStack(tankBlockEntity.getFluidHandler(), 0);
 
                 if (!fuelStack.isEmpty()) {
-                    int capacity = tankBlockEntity.getInputFluidHandler().getCapacityAsInt(0, FluidResource.of(fuelStack));
+                    int capacity = tankBlockEntity.getFluidHandler().getCapacityAsInt(0, FluidResource.of(fuelStack));
                     int amount = fuelStack.getAmount();
 
                     int maxHeight = 16;
@@ -199,7 +199,7 @@ public class MBControllerScreen extends AbstractContainerScreen<MBControllerMenu
     }
 
     private Optional<List<Component>> renderStackedFluids(GuiGraphicsExtractor guiGraphics, int tankX, int tankY, int width, int height, int mouseX, int mouseY) {
-        var handler = menu.blockEntity.getOutputFluidHandler();
+        var handler = menu.blockEntity.getFluidHandler();
         int totalCapacity = menu.data.get(201);
 
         if (totalCapacity <= 0) return Optional.empty();

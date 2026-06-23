@@ -68,7 +68,7 @@ public class MBControllerBlockEntityRenderer
         state.controllerPos = be.getBlockPos();
         state.fluids.clear();
 
-        MultiFluidResourceHandler handler = be.getOutputFluidHandler();
+        MultiFluidResourceHandler handler = (MultiFluidResourceHandler) be.getFluidHandler();
         for (int i = 0; i < 20; i++) {
             FluidStack stack = FluidUtil.getStack(handler, i);
             if (!stack.isEmpty()) {

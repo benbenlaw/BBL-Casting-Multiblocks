@@ -3,6 +3,7 @@ package com.benbenlaw.castingmb.screen;
 import com.benbenlaw.casting.Casting;
 import com.benbenlaw.casting.network.packet.ChangeMoldPagePacket;
 import com.benbenlaw.castingmb.block.entity.MBTankBlockEntity;
+import com.benbenlaw.castingmb.block.entity.handler.MultiFluidResourceHandler;
 import com.benbenlaw.core.Core;
 import com.benbenlaw.core.screen.util.DurationTooltip;
 import com.benbenlaw.core.screen.util.FluidRenderingUtils;
@@ -158,11 +159,11 @@ public class MBSolidifierScreen extends AbstractContainerScreen<MBSolidifierMenu
 
         if (fuelTankPos != null && menu.level.isLoaded(fuelTankPos)) {
             if (menu.level.getBlockEntity(fuelTankPos) instanceof MBTankBlockEntity tankBE) {
-                FluidStack fuelStack = FluidUtil.getStack(tankBE.getInputFluidHandler(), 0);
+                FluidStack fuelStack = FluidUtil.getStack(tankBE.getFluidHandler(), 0);
 
                 if (!fuelStack.isEmpty()) {
                     fuelTankFound = true;
-                    int cap = tankBE.getInputFluidHandler().getCapacityAsInt(0, FluidResource.of(fuelStack));
+                    int cap = tankBE.getFluidHandler().getCapacityAsInt(0, FluidResource.of(fuelStack));
                     int amt = fuelStack.getAmount();
 
                     int scaledHeight = (int) (((float) amt / cap) * fuelTankSize);
@@ -193,7 +194,7 @@ public class MBSolidifierScreen extends AbstractContainerScreen<MBSolidifierMenu
         var controller = menu.blockEntity.getController();
         if (controller == null) return;
 
-        var handler = controller.getOutputFluidHandler();
+        var handler = controller.getFluidHandler();
         int totalCapacity = menu.data.get(3) * 1000;
 
         if (totalCapacity <= 0) totalCapacity = 16000;
@@ -227,7 +228,8 @@ public class MBSolidifierScreen extends AbstractContainerScreen<MBSolidifierMenu
 
         if (isTooltip && !foundFluidTooltip && MouseUtil.isMouseOver(mouseX, mouseY, tankX, tankY, width, height)) {
 
-            int currentFluidAmount = handler.getTotalFluidAmount();
+            MultiFluidResourceHandler multiHandler  = (MultiFluidResourceHandler) controller.getFluidHandler();
+            int currentFluidAmount = multiHandler.getTotalFluidAmount();
             int remaining = totalCapacity - currentFluidAmount;
             List<Component> emptyTooltip = new ArrayList<>();
 

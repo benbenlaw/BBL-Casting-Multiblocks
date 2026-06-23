@@ -1,8 +1,10 @@
 package com.benbenlaw.castingmb.block.entity;
 
 import com.benbenlaw.casting.block.custom.CastingBlock;
+import com.benbenlaw.casting.block.entity.FluidAccepting;
 import com.benbenlaw.casting.block.entity.FluidSending;
 import com.benbenlaw.casting.item.CastingDataComponents;
+import com.benbenlaw.casting.item.FluidMoverItem;
 import com.benbenlaw.casting.item.util.FluidListComponent;
 import com.benbenlaw.casting.recipe.custom.MeltingRecipe;
 import com.benbenlaw.castingmb.block.CastingMBBlockEntities;
@@ -15,7 +17,9 @@ import com.benbenlaw.castingmb.util.CastingMBTags;
 import com.benbenlaw.castingmb.util.MBData;
 import com.benbenlaw.core.block.entity.SyncableBlockEntity;
 import com.benbenlaw.core.block.entity.handler.fluid.OutputFluidHandler;
+import com.benbenlaw.core.block.entity.handler.fluid.SyncableFluidHandler;
 import com.benbenlaw.core.block.entity.handler.item.InputItemHandler;
+import com.benbenlaw.core.block.entity.handler.item.SyncableItemHandler;
 import com.benbenlaw.core.multiblock.CoreMultiblockDetector;
 import com.benbenlaw.core.multiblock.MultiblockData;
 import net.minecraft.core.BlockPos;
@@ -40,8 +44,10 @@ import net.neoforged.neoforge.fluids.FluidStackTemplate;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.transfer.ResourceHandler;
 import net.neoforged.neoforge.transfer.fluid.FluidResource;
+import net.neoforged.neoforge.transfer.fluid.FluidStacksResourceHandler;
 import net.neoforged.neoforge.transfer.fluid.FluidUtil;
 import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.neoforged.neoforge.transfer.item.ItemStacksResourceHandler;
 import net.neoforged.neoforge.transfer.transaction.Transaction;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,7 +56,7 @@ import java.util.List;
 import java.util.OptionalInt;
 import java.util.Set;
 
-public class MBControllerBlockEntity extends SyncableBlockEntity implements MenuProvider, FluidSending {
+public class MBControllerBlockEntity extends SyncableBlockEntity implements MenuProvider, FluidSending, FluidAccepting {
 
     private final ContainerData data;
     private int[] progress = new int[100];
@@ -65,11 +71,11 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
     private int maxItemSlots = 0;
     private BlockPos clientSideFuelTankPos;
 
-    private final InputItemHandler inputHandler =
-            new DynamicInputItemHandler(this, 100, (i, stack) -> i >= 0 && i < 99);
+    private final SyncableItemHandler inventory =
+            new DynamicInputItemHandler(this, 100, (i, stack) -> i >= 0 && i < 99, i -> i == 100);
 
-    private final MultiFluidResourceHandler outputFluidHandler =
-            new MultiFluidResourceHandler(this, 1, 0, i -> true);
+    private final MultiFluidResourceHandler fluidInventory =
+            new MultiFluidResourceHandler(this, 1, 0, (i, stack) -> true, i -> i == 1);
 
     public MBControllerBlockEntity(BlockPos pos, BlockState state) {
         super(CastingMBBlockEntities.MB_CONTROLLER_BLOCK_ENTITY.get(), pos, state);
@@ -80,7 +86,7 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
                 if (index < 100) return progress[index];
                 if (index < 200) return maxProgress[index - 100];
                 if (index == 200) return temperature.orElse(Integer.MIN_VALUE);
-                if (index == 201) return outputFluidHandler.getCapacityAsInt(0, FluidResource.EMPTY);
+                if (index == 201) return fluidInventory.getCapacityAsInt(0, FluidResource.EMPTY);
                 if (index == 202) return maxItemSlots;
                 return 0;
             }
@@ -93,7 +99,7 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
                     temperature = (value == Integer.MIN_VALUE) ? OptionalInt.empty() : OptionalInt.of(value);
                 }
                 else if (index == 201) {
-                    outputFluidHandler.setTotalCapacity(value);
+                    fluidInventory.setTotalCapacity(value);
                 }
                 else if (index == 202) {
                     maxItemSlots = value;
@@ -145,9 +151,9 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         int loopLimit = Math.min(maxItemSlots, 100);
         for (int i = 0; i < loopLimit; i++) {
 
-            if (i >= inputHandler.size()) break;
+            if (i >= inventory.size()) break;
 
-            ItemStack stack = inputHandler.getResource(i).toStack();
+            ItemStack stack = inventory.getResource(i).toStack();
 
             if (stack.isEmpty()) {
                 if (progress[i] > 0) {
@@ -212,11 +218,11 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         }
 
         int newCapacity = cachedMultiblockData.volume() * 1000;
-        outputFluidHandler.setTotalCapacity(newCapacity);
+        fluidInventory.setTotalCapacity(newCapacity);
 
         this.maxItemSlots = cachedMultiblockData.volume();
 
-        outputFluidHandler.clampFluidsToCapacity();
+        fluidInventory.clampFluidsToCapacity();
 
         this.regulatorCount = 0;
 
@@ -229,9 +235,9 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         }
 
         if (regulatorCount > 0) {
-            outputFluidHandler.setMaxFluidTypes(1 + regulatorCount);
+            fluidInventory.setMaxFluidTypes(1 + regulatorCount);
         } else {
-            outputFluidHandler.setMaxFluidTypes(100);
+            fluidInventory.setMaxFluidTypes(100);
         }
     }
 
@@ -239,14 +245,15 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         if (level == null || level.isClientSide()) return;
 
         try (Transaction tx = Transaction.open(null)) {
-            for (int i = maxItemSlots; i < inputHandler.size(); i++) {
-                ItemResource resource = inputHandler.getResource(i);
+            for (int i = maxItemSlots; i < inventory.size(); i++) {
+                ItemResource resource = inventory.getResource(i);
                 if (!resource.isEmpty()) {
-                    int amount = inputHandler.getAmountAsInt(i);
+                    int amount = inventory.getAmountAsInt(i);
 
                     Block.popResource(level, worldPosition, resource.toStack(amount));
-
-                    inputHandler.extractInternal(i, resource, amount, tx);
+                    int finalI = i;
+                    inventory.runInternal(() -> {inventory.extract(finalI, resource, amount, tx);
+                    });
                 }
             }
             tx.commit();
@@ -263,7 +270,7 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
             BlockEntity entity = level.getBlockEntity(mbPos);
 
             if (entity instanceof MBTankBlockEntity tank) {
-                if (!tank.getInputFluidHandler().getResource(0).isEmpty()) {
+                if (!tank.getFluidHandler().getResource(0).isEmpty()) {
 
                     OptionalInt fuelTemp = tank.getFuelTemp();
 
@@ -281,8 +288,10 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         return hottestTank;
     }
     private void executeMelting(int slot, MeltingRecipe recipe, MBTankBlockEntity fuelTank) {
-        FluidStack fuelStack = FluidUtil.getStack(fuelTank.getInputFluidHandler(), 0);
+        FluidStack fuelStack = FluidUtil.getStack(fuelTank.getFluidHandler(), 0);
         if (fuelStack.isEmpty()) return;
+
+        SyncableFluidHandler fuelHandler = (SyncableFluidHandler) fuelTank.getFluidHandler();
 
         var fuelRecipe = MBTankBlockEntity.getFuel(level, fuelStack);
         if (fuelRecipe == null) return;
@@ -290,16 +299,23 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         int amountToConsume = fuelRecipe.value().fluid().amount();
 
         try (Transaction tx = Transaction.open(null)) {
-            inputHandler.extractInternal(slot, ItemResource.of(inputHandler.getResource(slot).toStack()), recipe.input().count(), tx);
 
-            fuelTank.getInputFluidHandler().extractInternal(0, fuelTank.getInputFluidHandler().getResource(0), amountToConsume, tx);
+            inventory.runInternal(() -> {
+                inventory.extract(slot, ItemResource.of(inventory.getResource(slot).toStack()), recipe.input().count(), tx);
+            });
+
+            fuelHandler.runInternal(() -> {
+                fuelHandler.extract(0, FluidResource.of(fuelStack), amountToConsume, tx);
+            });
 
             for (FluidStackTemplate fluid : recipe.output()) {
-                int remaining = fluid.amount();
 
-                for (int tank = 0; tank < outputFluidHandler.getMaxFluidTypes() && remaining > 0; tank++) {
-                    remaining -= outputFluidHandler.insertInternal(tank, FluidResource.of(fluid), remaining, tx);
-                }
+                fluidInventory.runInternal(() -> {
+                    int remaining = fluid.amount();
+                    for (int tank = 0; tank < fluidInventory.getMaxFluidTypes() && remaining > 0; tank++) {
+                        remaining -= fluidInventory.insert(tank, FluidResource.of(fluid), remaining, tx);
+                    }
+                });
             }
             tx.commit();
         }
@@ -333,15 +349,15 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
 
     private boolean canFitFluids(List<FluidStackTemplate> outputs) {
         int totalNeeded = outputs.stream().mapToInt(FluidStackTemplate::amount).sum();
-        int currentTotal = outputFluidHandler.getTotalFluidAmount();
-        int capacity = outputFluidHandler.getCapacityAsInt(0, FluidResource.EMPTY);
+        int currentTotal = fluidInventory.getTotalFluidAmount();
+        int capacity = fluidInventory.getCapacityAsInt(0, FluidResource.EMPTY);
 
         if (currentTotal + totalNeeded > capacity) return false;
 
         for (FluidStackTemplate out : outputs) {
             boolean canPlace = false;
-            for (int i = 0; i < outputFluidHandler.getMaxFluidTypes(); i++) {
-                FluidStack existing = FluidUtil.getStack(outputFluidHandler, i);
+            for (int i = 0; i < fluidInventory.getMaxFluidTypes(); i++) {
+                FluidStack existing = FluidUtil.getStack(fluidInventory, i);
                 if (existing.isEmpty() || FluidStack.isSameFluidSameComponents(existing, out)) {
                     canPlace = true;
                     break;
@@ -370,13 +386,26 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
     }
 
     public boolean onPlayerUse(Player player, InteractionHand hand) {
-        return FluidUtil.interactWithFluidHandler(player, hand, this.getBlockPos(), this.getOutputFluidHandler());
+        ItemStack stack = player.getItemInHand(hand);
+
+        if (stack.getItem() instanceof FluidMoverItem) {
+            int[] allTanks = java.util.stream.IntStream.range(0, fluidInventory.size()).toArray();
+            return FluidMoverItem.onBlockInteract(stack, fluidInventory, allTanks, allTanks);
+        }
+
+        try (Transaction tx = Transaction.open(null)) {
+            boolean result = FluidUtil.interactWithFluidHandler(player, hand, this.worldPosition, fluidInventory, tx);
+            if (result) {
+                tx.commit();
+            }
+            return result;
+        }
     }
 
     @Override
     protected void saveAdditional(ValueOutput output) {
-        inputHandler.serialize(output.child("inputs"));
-        outputFluidHandler.serialize(output.child("outputFluids"));
+        inventory.serialize(output.child("inventory"));
+        fluidInventory.serialize(output.child("fluidInventory"));
         output.putIntArray("progress", progress);
         output.putIntArray("maxProgress", maxProgress);
         output.putInt("temperature", temperature.orElse(Integer.MIN_VALUE));
@@ -390,8 +419,8 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
 
     @Override
     protected void loadAdditional(ValueInput input) {
-        inputHandler.deserialize(input.childOrEmpty("inputs"));
-        outputFluidHandler.deserialize(input.childOrEmpty("outputFluids"));
+        inventory.deserialize(input.childOrEmpty("inventory"));
+        fluidInventory.deserialize(input.childOrEmpty("fluidInventory"));
         this.progress = input.getIntArray("progress").orElse(new int[100]);
         this.maxProgress = input.getIntArray("maxProgress").orElse(new int[100]);
         int tempVal = input.getIntOr("temperature", Integer.MIN_VALUE);
@@ -402,14 +431,13 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         super.loadAdditional(input);
     }
 
-    public InputItemHandler getInputHandler() { return inputHandler; }
-
-    public ResourceHandler<ItemResource> getItemCapability() {
-        return inputHandler;
+    public ItemStacksResourceHandler getItemHandler() {
+        return inventory;
     }
 
-    public MultiFluidResourceHandler getOutputFluidHandler() { return outputFluidHandler; }
-    public ResourceHandler<FluidResource> getFluidCapability() { return outputFluidHandler; }
+    public FluidStacksResourceHandler getFluidHandler() {
+        return fluidInventory;
+    }
 
     public int getRegulatorCount() { return regulatorCount; }
 
@@ -422,13 +450,13 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
     }
 
     @Override public void preRemoveSideEffects(BlockPos pos, BlockState state) {
-        dropInventoryContents(inputHandler);
+        dropInventoryContents(inventory);
     }
 
     @Override
     protected void collectImplicitComponents(DataComponentMap.Builder builder) {
         super.collectImplicitComponents(builder);
-        builder.set(CastingDataComponents.FLUIDS.get(), FluidListComponent.fromHandlers(outputFluidHandler));
+        builder.set(CastingDataComponents.FLUIDS.get(), FluidListComponent.fromHandlers(fluidInventory));
     }
 
     @Override
@@ -436,16 +464,31 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         super.applyImplicitComponents(components);
         FluidListComponent component = components.get(CastingDataComponents.FLUIDS.get());
         if (component != null) {
-            this.outputFluidHandler.setTotalCapacity(Integer.MAX_VALUE);
-            this.outputFluidHandler.setMaxFluidTypes(0);
+            this.fluidInventory.setTotalCapacity(Integer.MAX_VALUE);
+            this.fluidInventory.setMaxFluidTypes(0);
 
-            component.applyToHandlers(outputFluidHandler);
+            component.applyToHandlers(fluidInventory);
             this.structureDirty = true;
         }
     }
 
     @Override
-    public OutputFluidHandler sendingHandler() {
-        return outputFluidHandler;
+    public SyncableFluidHandler fluidHandler() {
+        return fluidInventory;
+    }
+
+    @Override
+    public int[] sendingTanks() {
+        return new int[0];
+    }
+
+    @Override
+    public SyncableFluidHandler receivingHandler() {
+        return fluidInventory;
+    }
+
+    @Override
+    public int[] acceptingTanks() {
+        return new int[0];
     }
 }

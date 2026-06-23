@@ -1,23 +1,7 @@
 package com.benbenlaw.castingmb;
 
-import com.benbenlaw.casting.Casting;
-import com.benbenlaw.casting.block.CastingBlockEntities;
-import com.benbenlaw.casting.block.CastingBlocks;
-import com.benbenlaw.casting.block.CastingCapabilities;
-import com.benbenlaw.casting.block.entity.renderer.TankBlockEntityRenderer;
-import com.benbenlaw.casting.config.CastingConfig;
-import com.benbenlaw.casting.fluid.CastingFluids;
-import com.benbenlaw.casting.item.CastingCreativeModeTab;
-import com.benbenlaw.casting.item.CastingDataComponents;
-import com.benbenlaw.casting.item.CastingItems;
-import com.benbenlaw.casting.recipe.CastingRecipeTypes;
-import com.benbenlaw.casting.screen.CastingMenuTypes;
-import com.benbenlaw.casting.screen.ControllerScreen;
-import com.benbenlaw.casting.screen.MixerScreen;
-import com.benbenlaw.casting.screen.SolidifierScreen;
 import com.benbenlaw.castingmb.block.CastingMBBlockEntities;
 import com.benbenlaw.castingmb.block.CastingMBBlocks;
-import com.benbenlaw.castingmb.block.CastingMBCapabilities;
 import com.benbenlaw.castingmb.block.entity.renderer.MBControllerBlockEntityRenderer;
 import com.benbenlaw.castingmb.block.entity.renderer.MBTankBlockEntityRenderer;
 import com.benbenlaw.castingmb.block.entity.renderer.MBTankSpecialRenderer;
@@ -34,17 +18,10 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.config.ModConfig;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterSpecialModelRendererEvent;
-import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
-import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
 @Mod(CastingMB.MOD_ID)
@@ -60,12 +37,8 @@ public class CastingMB {
         CastingMBMenuTypes.MENUS.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
-        modEventBus.addListener(this::registerCapabilities);
     }
 
-    public void registerCapabilities(RegisterCapabilitiesEvent event) {
-        CastingMBCapabilities.registerCapabilities(event);
-    }
 
     public void commonSetup(RegisterPayloadHandlersEvent event) {
         CastingMBNetworking.registerNetworking(event);

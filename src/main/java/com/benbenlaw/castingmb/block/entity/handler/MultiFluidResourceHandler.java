@@ -2,22 +2,24 @@ package com.benbenlaw.castingmb.block.entity.handler;
 
 import com.benbenlaw.core.block.entity.SyncableBlockEntity;
 import com.benbenlaw.core.block.entity.handler.fluid.OutputFluidHandler;
+import com.benbenlaw.core.block.entity.handler.fluid.SyncableFluidHandler;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.transfer.fluid.FluidResource;
 import net.neoforged.neoforge.transfer.fluid.FluidUtil;
 import net.neoforged.neoforge.transfer.transaction.Transaction;
 import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
-public class MultiFluidResourceHandler extends OutputFluidHandler {
+public class MultiFluidResourceHandler extends SyncableFluidHandler {
     private int totalCapacity;
     private int maxFluidTypes;
     // Store our own reference to bypass the private access in the parent class
     private final SyncableBlockEntity syncableBlockEntity;
 
-    public MultiFluidResourceHandler(SyncableBlockEntity blockEntity, int maxFluidTypes, int totalCapacity, Predicate<Integer> canOutput) {
-        super(blockEntity, 20, 1000000, canOutput);
+    public MultiFluidResourceHandler(SyncableBlockEntity blockEntity, int maxFluidTypes, int totalCapacity, BiPredicate<Integer, FluidStack> canOutput, Predicate<Integer> canExtract) {
+        super(blockEntity, 20, 1000000, canOutput, canExtract);
 
         this.syncableBlockEntity = blockEntity;
         this.totalCapacity = totalCapacity;
@@ -71,6 +73,7 @@ public class MultiFluidResourceHandler extends OutputFluidHandler {
     public int getCapacityAsInt(int index, FluidResource resource) {
         return this.totalCapacity;
     }
+
     public int getTotalFluidAmount() {
         int total = 0;
         for (int i = 0; i < this.size(); i++) {
