@@ -32,7 +32,7 @@ import java.util.OptionalInt;
 
 public class MBTankBlockEntity extends SyncableBlockEntity implements IsMultiblockTank {
 
-    private final SyncableFluidHandler fluidInventory = new SyncableFluidHandler(this, 1, 16000, (i, stack) -> i == 0, i -> i == 1);
+    private final SyncableFluidHandler fluidInventory = new SyncableFluidHandler(this, 1, 16000, (i, stack) -> i == 0, i -> i == 0);
 
     public MBTankBlockEntity(BlockPos pos, BlockState state) {
         super(CastingMBBlockEntities.MB_TANK_BLOCK_ENTITY.get(), pos, state);

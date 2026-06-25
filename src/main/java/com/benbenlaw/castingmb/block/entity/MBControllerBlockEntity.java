@@ -16,9 +16,7 @@ import com.benbenlaw.castingmb.screen.MBControllerMenu;
 import com.benbenlaw.castingmb.util.CastingMBTags;
 import com.benbenlaw.castingmb.util.MBData;
 import com.benbenlaw.core.block.entity.SyncableBlockEntity;
-import com.benbenlaw.core.block.entity.handler.fluid.OutputFluidHandler;
 import com.benbenlaw.core.block.entity.handler.fluid.SyncableFluidHandler;
-import com.benbenlaw.core.block.entity.handler.item.InputItemHandler;
 import com.benbenlaw.core.block.entity.handler.item.SyncableItemHandler;
 import com.benbenlaw.core.multiblock.CoreMultiblockDetector;
 import com.benbenlaw.core.multiblock.MultiblockData;
@@ -75,7 +73,9 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
             new DynamicInputItemHandler(this, 100, (i, stack) -> i >= 0 && i < 99, i -> i == 100);
 
     private final MultiFluidResourceHandler fluidInventory =
-            new MultiFluidResourceHandler(this, 1, 0, (i, stack) -> true, i -> i == 1);
+            new MultiFluidResourceHandler(this, 1, 0,
+                    (i, stack) -> i < this.fluidInventory.getMaxFluidTypes(),
+                    i -> i < this.fluidInventory.getMaxFluidTypes());
 
     public MBControllerBlockEntity(BlockPos pos, BlockState state) {
         super(CastingMBBlockEntities.MB_CONTROLLER_BLOCK_ENTITY.get(), pos, state);
