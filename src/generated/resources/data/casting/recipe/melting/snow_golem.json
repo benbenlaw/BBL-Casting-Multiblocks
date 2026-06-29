@@ -1,0 +1,13 @@
+{
+  "type": "castingmb:entity_melting",
+  "damage": 20,
+  "duration_modifier": 0.2,
+  "entity": "minecraft:snow_golem",
+  "melting_temp": 400,
+  "output": [
+    {
+      "amount": 6000,
+      "id": "casting:chilled_water"
+    }
+  ]
+}

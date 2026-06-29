@@ -1,27 +1,32 @@
 package com.benbenlaw.castingmb.data;
 
 import com.benbenlaw.casting.block.CastingBlocks;
+import com.benbenlaw.casting.data.custom.FluidStackTemplateHelper;
 import com.benbenlaw.casting.data.custom.SolidifierRecipeBuilder;
 import com.benbenlaw.casting.fluid.FluidData;
 import com.benbenlaw.casting.item.CastingItems;
 import com.benbenlaw.castingmb.CastingMB;
 import com.benbenlaw.castingmb.block.CastingMBBlocks;
+import com.benbenlaw.castingmb.data.custom.EntityMeltingRecipeBuilder;
 import com.benbenlaw.core.tag.ResourceType;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.RecipeCategory;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.data.recipes.RecipeProvider;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ItemLike;
 import net.neoforged.neoforge.common.crafting.SizedIngredient;
 import net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static com.benbenlaw.casting.data.custom.FluidStackTemplateHelper.getFluidIngredient;
+import static com.benbenlaw.casting.data.custom.FluidStackTemplateHelper.getFluidStack;
 
 public class CastingMBRecipeProvider extends RecipeProvider {
 
@@ -68,13 +73,33 @@ public class CastingMBRecipeProvider extends RecipeProvider {
         simpleSolidifierRecipe(CastingMBBlocks.MB_TANK, getFluidIngredient("molten_black_brick", 2000),
                 CastingBlocks.TANK, "black_brick/mb_tank", ResourceType.STORAGE_BLOCKS, getTempFromFluid("molten_black_brick"));
 
+        //Entity Melting
+        simpleEntityMeltingRecipe(EntityType.SNOW_GOLEM, "chilled_water", 6000, 20, 0.2);
+        simpleEntityMeltingRecipe(EntityType.BLAZE, "molten_blaze", 45, 5, 1.2);
+        simpleEntityMeltingRecipe(EntityType.ENDERMAN, "molten_ender", 250, 50, 3.0);
 
+
+        /*
+        EntityMeltingRecipeBuilder.meltingRecipesBuilder(EntityType.SNOW_GOLEM,
+                List.of(FluidStackTemplateHelper.getFluidStack("molten_coal", 80)), 100, 20,  Optional.of(0.2));
+
+         */
+
+
+    }
+
+    public void simpleEntityMeltingRecipe(EntityType<?> entity, String fluid, int fluidAmount, int damage, double durationModifier) {
+
+        EntityMeltingRecipeBuilder.meltingRecipesBuilder(entity,
+                List.of(FluidStackTemplateHelper.getFluidStack(fluid, fluidAmount)), getTempFromFluid(fluid), damage, Optional.of(durationModifier))
+                .save(output);
 
     }
 
     public int getTempFromFluid(String fluidName) {
         return FluidData.FLUID_DEFINITIONS.stream().filter(data -> data.name().equals(fluidName)).findFirst().orElseThrow().fluidProduceType().temp();
     }
+
 
     public void simpleSolidifierRecipe(ItemLike block, SizedFluidIngredient fluidStack, ItemLike mold, String id, ResourceType resourceType, int temp) {
         SolidifierRecipeBuilder.solidifierRecipesBuilder(

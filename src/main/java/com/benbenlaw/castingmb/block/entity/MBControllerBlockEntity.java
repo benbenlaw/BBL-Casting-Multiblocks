@@ -12,6 +12,7 @@ import com.benbenlaw.castingmb.block.custom.MBControllerBlock;
 import com.benbenlaw.castingmb.block.entity.handler.DynamicInputItemHandler;
 import com.benbenlaw.castingmb.block.entity.handler.MultiFluidResourceHandler;
 import com.benbenlaw.castingmb.network.packets.SyncFuelTanks;
+import com.benbenlaw.castingmb.recipe.EntityMeltingRecipe;
 import com.benbenlaw.castingmb.screen.MBControllerMenu;
 import com.benbenlaw.castingmb.util.CastingMBTags;
 import com.benbenlaw.castingmb.util.MBData;
@@ -24,8 +25,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponentGetter;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -37,6 +41,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidStackTemplate;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -49,10 +54,7 @@ import net.neoforged.neoforge.transfer.item.ItemStacksResourceHandler;
 import net.neoforged.neoforge.transfer.transaction.Transaction;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.OptionalInt;
-import java.util.Set;
+import java.util.*;
 
 public class MBControllerBlockEntity extends SyncableBlockEntity implements MenuProvider, FluidSending, FluidAccepting {
 
@@ -68,6 +70,7 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
     private int regulatorCount = 0;
     private int maxItemSlots = 0;
     private BlockPos clientSideFuelTankPos;
+    private final Map<UUID, Integer> entityDamageCooldowns = new HashMap<>();
 
     private final SyncableItemHandler inventory =
             new DynamicInputItemHandler(this, 100, (i, stack) -> i >= 0 && i < 99, i -> i == 100);
@@ -136,6 +139,12 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         }
 
         boolean isRunning = level.getBlockState(worldPosition).getValue(MBControllerBlock.RUNNING);
+
+        //Entity melting?
+        if (isRunning && cachedMultiblockData != null) {
+            tickEntityDamage();
+        }
+
         MBTankBlockEntity activeFuelTank = getActiveFuelTank();
         this.temperature = activeFuelTank != null ? activeFuelTank.getFuelTemp() : OptionalInt.empty();
 
@@ -287,6 +296,7 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         }
         return hottestTank;
     }
+
     private void executeMelting(int slot, MeltingRecipe recipe, MBTankBlockEntity fuelTank) {
         FluidStack fuelStack = FluidUtil.getStack(fuelTank.getFluidHandler(), 0);
         if (fuelStack.isEmpty()) return;
@@ -319,6 +329,82 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
             }
             tx.commit();
         }
+    }
+
+    private void tickEntityDamage() {
+        AABB interior = getInteriorAABB();
+        if (interior == null) return;
+
+        assert level != null;
+        List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, interior);
+
+        Set<UUID> currentIds = new HashSet<>();
+        for (LivingEntity entity : entities) currentIds.add(entity.getUUID());
+        entityDamageCooldowns.keySet().retainAll(currentIds);
+
+        for (LivingEntity entity : entities) {
+            if (entity.isDeadOrDying()) continue;
+
+            RecipeHolder<EntityMeltingRecipe> recipeHolder = getRecipeForEntity(entity.getType());
+            if (recipeHolder == null) continue;
+
+            EntityMeltingRecipe recipe = recipeHolder.value();
+
+            if (!canFitFluids(recipe.output())) continue;
+
+            int cooldown = entityDamageCooldowns.getOrDefault(entity.getUUID(), 0);
+            if (cooldown > 0) {
+                entityDamageCooldowns.put(entity.getUUID(), cooldown - 1);
+                continue;
+            }
+
+            entity.hurtServer((ServerLevel) level, level.damageSources().magic(), recipe.damage());
+
+            try (Transaction tx = Transaction.open(null)) {
+                for (FluidStackTemplate fluid : recipe.output()) {
+                    fluidInventory.runInternal(() -> {
+                        int remaining = fluid.amount();
+                        for (int tank = 0; tank < fluidInventory.getMaxFluidTypes() && remaining > 0; tank++) {
+                            remaining -= fluidInventory.insert(tank, FluidResource.of(fluid), remaining, tx);
+                        }
+                    });
+                }
+                tx.commit();
+            }
+
+            if (recipe.durationModifier().isPresent()) {
+                entityDamageCooldowns.put(entity.getUUID(), (int) (50 * recipe.durationModifier().get()));
+            } else {
+                entityDamageCooldowns.put(entity.getUUID(), 50);
+            }
+
+        }
+    }
+
+    private RecipeHolder<EntityMeltingRecipe> getRecipeForEntity(EntityType<?> entityType) {
+        if (level == null || level.getServer() == null) return null;
+        return level.getServer().getRecipeManager().recipeMap().values().stream()
+                .filter(holder -> holder.value().getType() == EntityMeltingRecipe.TYPE)
+                .map(holder -> (RecipeHolder<EntityMeltingRecipe>) holder)
+                .filter(holder -> holder.value().entity() == entityType)
+                .findFirst().orElse(null);
+    }
+
+    private AABB getInteriorAABB() {
+        if (cachedMultiblockData == null) return null;
+
+        BlockPos a = cachedMultiblockData.topCorners().getFirst();
+        BlockPos b = cachedMultiblockData.topCorners().getSecond();
+        int height = cachedMultiblockData.height();
+
+        int minX = Math.min(a.getX(), b.getX());
+        int maxX = Math.max(a.getX(), b.getX());
+        int minZ = Math.min(a.getZ(), b.getZ());
+        int maxZ = Math.max(a.getZ(), b.getZ());
+        int topY = Math.max(a.getY(), b.getY());
+        int bottomY = topY - (height - 1);
+
+        return new AABB(minX + 1, bottomY, minZ + 1, maxX, topY + 1, maxZ);
     }
 
     private void validateMultiblock() {

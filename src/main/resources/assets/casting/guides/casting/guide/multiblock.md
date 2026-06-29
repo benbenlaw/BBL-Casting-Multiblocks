@@ -34,6 +34,9 @@ Used to fill create the walls and floor of the structure, Glass can be used to v
 ## Multiblock Regulators
 The Multiblock Regulator is used to regulate the amount of fluid types that the multiblock tank can add. Without regulators the multiblock tank can add any amount of fluid types. For each regulator added will allow you to store an addition fluid type. So with 3 regulators you can store 3 different fluid types in the multiblock tank. The amount of regulators will show when hovering over Multiblock Controller Tank.
 
+## Entity Melting
+Some entities can be melted inside the multiblock into fluids seems completely fine right
+
 ## Examples 1
 A simple 3x3x3 multiblock with 27 internal air blocks, so it has 27 item slots and a tank capacity of 27000mb. It has no regulators so it can store any amount of fluid types in the tank.
 <GameScene zoom="3" interactive={true}>

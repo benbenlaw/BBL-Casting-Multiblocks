@@ -32,7 +32,10 @@ public class CastingMBLangProvider extends LanguageProvider {
         add("tooltip.castingmb.empty_space", "Free Space");
         add("tooltip.castingmb.no_fuel_mb", "No Fuel Tanks with hot enough fuel found in the multiblock structure!");
         add("tooltip.castingmb.no_fuel_cold_mb", "No Fuel Tanks with cold enough fuel found in the multiblock structure, add to speed up solidifiers!");
+        add("tooltip.castingmb.entity_melting", "Deals %s damage per %s ticks");
 
+        //JEI
+        add("jei.castingmb.entity_melting", "Entity Melting");
 
 
 

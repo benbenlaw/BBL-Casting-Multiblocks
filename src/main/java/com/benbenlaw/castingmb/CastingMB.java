@@ -8,6 +8,7 @@ import com.benbenlaw.castingmb.block.entity.renderer.MBTankSpecialRenderer;
 import com.benbenlaw.castingmb.item.CastingMBCreativeModeTab;
 import com.benbenlaw.castingmb.item.CastingMBItems;
 import com.benbenlaw.castingmb.network.CastingMBNetworking;
+import com.benbenlaw.castingmb.recipe.CastingMBRecipeTypes;
 import com.benbenlaw.castingmb.screen.CastingMBMenuTypes;
 import com.benbenlaw.castingmb.screen.MBControllerScreen;
 import com.benbenlaw.castingmb.screen.MBSolidifierScreen;
@@ -35,6 +36,8 @@ public class CastingMB {
         CastingMBItems.ITEMS.register(modEventBus);
         CastingMBCreativeModeTab.CREATIVE_MODE_TABS.register(modEventBus);
         CastingMBMenuTypes.MENUS.register(modEventBus);
+        CastingMBRecipeTypes.SERIALIZER.register(modEventBus);
+        CastingMBRecipeTypes.TYPES.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
     }

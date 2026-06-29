@@ -10,14 +10,14 @@ import com.benbenlaw.casting.screen.ControllerScreen;
 import com.benbenlaw.casting.screen.SolidifierScreen;
 import com.benbenlaw.castingmb.CastingMB;
 import com.benbenlaw.castingmb.block.CastingMBBlocks;
+import com.benbenlaw.castingmb.event.client.ClientRecipeCache;
+import com.benbenlaw.castingmb.recipe.CastingMBRecipeTypes;
 import com.benbenlaw.castingmb.screen.MBControllerScreen;
 import com.benbenlaw.castingmb.screen.MBSolidifierScreen;
 import com.benbenlaw.core.integration.jei.GhostFilter;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
-import mezz.jei.api.registration.IGuiHandlerRegistration;
-import mezz.jei.api.registration.IIngredientAliasRegistration;
-import mezz.jei.api.registration.IRecipeCatalystRegistration;
+import mezz.jei.api.registration.*;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
@@ -42,6 +42,18 @@ public class JEICastingMBPlugin implements IModPlugin {
         registration.addCraftingStation(MeltingRecipeCategory.RECIPE_TYPE, new ItemStack(CastingMBBlocks.MB_CONTROLLER));
         registration.addCraftingStation(SolidifierRecipeCategory.RECIPE_TYPE, new ItemStack(CastingMBBlocks.MB_SOLIDIFIER));
         registration.addCraftingStation(FuelRecipeCategory.RECIPE_TYPE, new ItemStack(CastingMBBlocks.MB_TANK));
+        registration.addCraftingStation(EntityMeltingRecipeCategory.RECIPE_TYPE, new ItemStack(CastingMBBlocks.MB_CONTROLLER));
+    }
+
+    @Override
+    public void registerCategories(IRecipeCategoryRegistration registration) {
+        registration.addRecipeCategories(new EntityMeltingRecipeCategory(registration.getJeiHelpers().getGuiHelper()));
+    }
+
+    @Override
+    public void registerRecipes(IRecipeRegistration registration) {
+        registration.addRecipes(EntityMeltingRecipeCategory.RECIPE_TYPE, ClientRecipeCache.getCachedEntityMeltingRecipes().stream().toList());
+
     }
 
     public void registerGuiHandlers(IGuiHandlerRegistration registration) {
@@ -50,10 +62,4 @@ public class JEICastingMBPlugin implements IModPlugin {
 
         registration.addGhostIngredientHandler(MBSolidifierScreen.class, new GhostFilter<>());
     }
-
-
-
-
-
-
 }
