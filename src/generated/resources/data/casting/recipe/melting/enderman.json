@@ -1,0 +1,13 @@
+{
+  "type": "castingmb:entity_melting",
+  "damage": 50,
+  "duration_modifier": 3.0,
+  "entity": "minecraft:enderman",
+  "melting_temp": 1000,
+  "output": [
+    {
+      "amount": 250,
+      "id": "casting:molten_ender"
+    }
+  ]
+}

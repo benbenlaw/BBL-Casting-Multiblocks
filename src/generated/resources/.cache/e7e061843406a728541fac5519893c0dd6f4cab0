@@ -1,4 +1,4 @@
-// 26.1.2	2026-04-17T16:14:39.7388859	Model Definitions - castingmb
+// 26.1.2	2026-07-14T14:23:03.8165915	Model Definitions - castingmb
 e9f43f12d19c8768a17e1cebc76304d8b591cf5a assets/castingmb/blockstates/mb_black_bricks.json
 d2ae31fc8a7c22ae4af1cbdfe1a9871ec7704fe7 assets/castingmb/blockstates/mb_controller.json
 4e45c5868d153d101b1cbb1aae878c3bbcde31fc assets/castingmb/blockstates/mb_regulator.json
@@ -22,4 +22,3 @@ be2a91e2e131c899e14128400944b05a25869f64 assets/castingmb/models/block/mb_regula
 c105a8dc91e845c9eb1f359ead0dadd70aeef760 assets/castingmb/models/block/mb_solidifier_vertical.json
 880ee67802a9757dd9af1b2299c0c46c989889da assets/castingmb/models/block/mb_solidifier_working.json
 4f4b500e59c1f42350f7b3ff546ebf1d80a98c2f assets/castingmb/models/block/mb_solidifier_working_vertical.json
-f94bb36ed00712aa91dfbf8d08952b74259ca11c assets/castingmb/models/block/mb_tank.json

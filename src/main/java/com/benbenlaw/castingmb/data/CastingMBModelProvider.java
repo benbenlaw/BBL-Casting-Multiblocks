@@ -54,7 +54,13 @@ public class CastingMBModelProvider extends ModelProvider {
         createMachineBlock(CastingMBBlocks.MB_REGULATOR.get(), blockModels.blockStateOutput, blockModels.modelOutput);
         blockModels.createTrivialCube(CastingMBBlocks.MB_BLACK_BRICKS.get());
 
-        blockModels.createTrivialCube(CastingMBBlocks.MB_TANK.get());
+        blockModels.blockStateOutput.accept(
+                createSimpleBlock(
+                        CastingMBBlocks.MB_TANK.get(),
+                        plainVariant(ModelLocationUtils.getModelLocation(CastingMBBlocks.MB_TANK.get()))
+                )
+        );
+
         createTankItemModel(itemModels, CastingMBBlocks.MB_TANK.get());
 
 

@@ -1,14 +1,18 @@
-// 26.1.2	2026-06-29T14:59:06.1571775	castingmb Recipes
+// 26.1.2	2026-07-14T12:51:58.3268545	castingmb Recipes
 60b08c05395e5ef690720e89601e582b2fc796dc data/castingmb/advancement/recipes/misc/mb_controller.json
 8cb3860fda19df8e7d4427cdef8d0df6e8d4eed0 data/castingmb/advancement/recipes/misc/mb_tank.json
 774df335117c33229d34458f451ac5ff3bce4ca8 data/castingmb/recipe/mb_controller.json
 4a0877b88f4645ea62a76c64f8b5653a603ed6f9 data/castingmb/recipe/mb_tank.json
+8ee01f1c498aae912272fded8bfdfa4eca25c42d data/casting/advancement/recipes/entity_melting/melting/blaze.json
+f7748839c0dfe720a06029491074f924793115dc data/casting/advancement/recipes/entity_melting/melting/enderman.json
 d20f764f7e6b4c38211479320a01235a22069646 data/casting/advancement/recipes/entity_melting/melting/snow_golem.json
 7d7f6bd8c71092aee6141bc79b36c4b324518bf1 data/casting/advancement/recipes/solidifier/solidifier/black_brick/mb_black_brick.json
 85ca881ccadcd0e5c236033a5d77cc6e60ca3659 data/casting/advancement/recipes/solidifier/solidifier/black_brick/mb_controller.json
 364a9a136ebc042e847aa4310d7399ef5d05149d data/casting/advancement/recipes/solidifier/solidifier/black_brick/mb_regulator.json
 a5e9fccd7080a97d1c0270566bcf80c751253a38 data/casting/advancement/recipes/solidifier/solidifier/black_brick/mb_solidifier.json
 24940864ed56bbac0a2d843a87d15b4a9bc3912b data/casting/advancement/recipes/solidifier/solidifier/black_brick/mb_tank.json
+b43fe4266a2cd54067a24e21a34210cb0a164d77 data/casting/recipe/melting/blaze.json
+8e50bda7789fea809e4bf6823c2b1b707b8fab34 data/casting/recipe/melting/enderman.json
 321115af3e55bef1e0aa597e66a27aa45092ebed data/casting/recipe/melting/snow_golem.json
 c78e3608396a082b83039aea8a6ffea012b5c804 data/casting/recipe/solidifier/black_brick/mb_black_brick.json
 fc6aadd5189c24d9db68b60b1019b46da5a22b3f data/casting/recipe/solidifier/black_brick/mb_controller.json

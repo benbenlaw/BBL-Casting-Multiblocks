@@ -1,0 +1,13 @@
+{
+  "type": "castingmb:entity_melting",
+  "damage": 5,
+  "duration_modifier": 1.2,
+  "entity": "minecraft:blaze",
+  "melting_temp": 1400,
+  "output": [
+    {
+      "amount": 45,
+      "id": "casting:molten_blaze"
+    }
+  ]
+}
