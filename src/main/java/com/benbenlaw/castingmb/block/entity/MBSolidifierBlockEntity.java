@@ -165,23 +165,29 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
                 double finalModifier = recipe.durationModifier().orElse(1.0);
 
                 int recipeMeltingTemp = recipe.meltingTemp();
-                if (currentTemp < recipeMeltingTemp) {
+                boolean fuelBenefited = currentTemp < recipeMeltingTemp;
+
+                if (fuelBenefited) {
                     int tempDifference = recipeMeltingTemp - currentTemp;
                     float tempBonus = (tempDifference / 25f) * 0.01f;
                     finalModifier -= tempBonus;
                 }
 
                 maxProgress = (int) (baseMaxProgress * finalModifier);
-                if (maxProgress < 10) maxProgress = 10;
+                if (maxProgress < 5) maxProgress = 5;
 
                 progress++;
                 changed = true;
 
                 if (progress >= maxProgress) {
-                    if (coolantTank != null) {
+                    if (!fuelBenefited) {
+                        executeSolidifying(recipe, false);
+                        progress = 0;
+                        setChanged();
+                    } else if (coolantTank != null) {
                         FluidStack coolantStack = FluidUtil.getStack(coolantTank.getFluidHandler(), 0);
                         if (coolantStack.getAmount() >= 100) {
-                            executeSolidifying(recipe);
+                            executeSolidifying(recipe, true);
                             progress = 0;
                             setChanged();
                         }
@@ -233,6 +239,9 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
         for (BlockPos pos : controller.cachedMultiblockData.extraBlocks()) {
             assert level != null;
             if (level.getBlockEntity(pos) instanceof MBTankBlockEntity tank) {
+                FluidStack fluid = FluidUtil.getStack(tank.getFluidHandler(), 0);
+                if (fluid.isEmpty()) continue;
+
                 int temp = tank.getFuelTemp().orElse(1000);
                 if (temp < lowestTemp) {
                     lowestTemp = temp;
@@ -307,7 +316,7 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
         }
     }
 
-    private void executeSolidifying(SolidifierRecipe recipe) {
+    private void executeSolidifying(SolidifierRecipe recipe, boolean consumeFuel) {
         MBControllerBlockEntity controller = getController();
         MBTankBlockEntity coolantTank = getCoolestFuelTank();
 
@@ -337,7 +346,7 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
                     });
                 }
 
-                if (coolantTank != null) {
+                if (consumeFuel && coolantTank != null) {
                     SyncableFluidHandler coolantHandler = (SyncableFluidHandler) coolantTank.getFluidHandler();
                     FluidStack fuelStack = FluidUtil.getStack(coolantHandler, 0);
 
@@ -361,20 +370,6 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
                 tx.commit();
             }
         }
-    }
-
-    private boolean hasEnoughFluid(SolidifierRecipe recipe) {
-        MBControllerBlockEntity controller = getController();
-        if (controller == null) return false;
-
-        var handler = controller.getFluidHandler();
-        for (int i = 0; i < handler.size(); i++) {
-            FluidStack inTank = FluidUtil.getStack(handler, i);
-            if (!inTank.isEmpty() && recipe.fluid().ingredient().test(inTank) && inTank.getAmount() >= recipe.fluid().amount()) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private RecipeHolder<SolidifierRecipe> getRecipe() {
@@ -583,7 +578,7 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
     }
 
     @Override
-    public @Nullable SyncableFluidHandler getFilter() {
+    public @Nullable FilterFluidHandler getFilter() {
         return FluidAccepting.super.getFilter();
     }
 
