@@ -506,6 +506,7 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
         }
 
         MBControllerBlockEntity controller = getController();
+        if (controller == null) return false;
 
         try (Transaction tx = Transaction.open(null)) {
             boolean result = FluidUtil.interactWithFluidHandler(player, hand, this.worldPosition, controller.getFluidHandler(), tx);
