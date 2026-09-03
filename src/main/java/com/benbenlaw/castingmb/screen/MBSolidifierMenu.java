@@ -68,6 +68,9 @@ public class MBSolidifierMenu extends SimpleAbstractContainerMenu {
 
         this.addSlot(new ResultSlot(blockEntity.getItemHandler(), blockEntity.getItemHandler()::set, 1, 116, 20));
 
+        SimpleContainer fluidFilterContainer = new SimpleContainer(1);
+        this.addSlot(new FilterFluidSlot(fluidFilterContainer, blockEntity.getFilterFluidHandler(), 0, 8, 20));
+
         addDataSlots(data);
     }
 
