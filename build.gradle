@@ -86,6 +86,8 @@ dependencies {
     runtimeOnly("curse.maven:ato-405593:7928265")
     //Guide Me
     runtimeOnly("curse.maven:guideme-1173950:7929350")
+    //Observable
+    runtimeOnly("curse.maven:observable-remake-1639360:8589511")
 
 }
 

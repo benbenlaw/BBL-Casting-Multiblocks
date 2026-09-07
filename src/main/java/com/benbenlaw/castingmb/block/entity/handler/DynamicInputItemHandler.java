@@ -1,8 +1,6 @@
 package com.benbenlaw.castingmb.block.entity.handler;
 
 import com.benbenlaw.castingmb.block.entity.MBControllerBlockEntity;
-import com.benbenlaw.core.block.entity.SyncableBlockEntity;
-import com.benbenlaw.core.block.entity.handler.item.InputItemHandler;
 import com.benbenlaw.core.block.entity.handler.item.SyncableItemHandler;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.transfer.item.ItemResource;

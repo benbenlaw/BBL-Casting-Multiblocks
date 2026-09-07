@@ -31,6 +31,7 @@ import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
@@ -49,6 +50,7 @@ import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
 
@@ -58,8 +60,22 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
     private int maxProgress = 200;
     private int progress = 0;
     private OptionalInt temperature = OptionalInt.empty();
+    private BlockPos lastSyncedFuelTankPos;
 
-    private final SyncableItemHandler inventory = new SyncableItemHandler(this, 2,(i, stack) -> i == 0, i -> i == 1);
+    private List<RecipeHolder<SolidifierRecipe>> cachedMoldCandidates = List.of();
+    private boolean moldCacheDirty = true;
+    private RecipeManager lastRecipeManager = null;
+
+    private final SyncableItemHandler inventory = new SyncableItemHandler(this, 2, (i, stack) -> i == 0, i -> i == 1) {
+        @Override
+        protected void onContentsChanged(int index, ItemStack previousContents) {
+            if (index == INPUT_SLOT) {
+                moldCacheDirty = true;
+            }
+            super.onContentsChanged(index, previousContents);
+        }
+    };
+
     private final SyncableItemHandler storedMolds = new SyncableItemHandler(this, 20, (i, stack) ->false, i -> false);
     private final FilterFluidHandler filterFluidHandler = new FilterFluidHandler(this, 1);
 
@@ -118,12 +134,17 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
         MBControllerBlockEntity controller = getController();
         if (controller == null) return;
 
-        MBTankBlockEntity tank = getCoolestFuelTank();
-        PacketDistributor.sendToAllPlayers(new SyncFuelTanks(this.worldPosition, tank != null ? tank.getBlockPos() : null));
+        MBTankBlockEntity coolantTank = getCoolestFuelTank();
+
+        BlockPos coolantPos = coolantTank != null ? coolantTank.getBlockPos() : null;
+        if (!java.util.Objects.equals(coolantPos, lastSyncedFuelTankPos)) {
+            lastSyncedFuelTankPos = coolantPos;
+            PacketDistributor.sendToAllPlayers(new SyncFuelTanks(this.worldPosition, coolantPos));
+        }
 
         boolean isRunning = level.getBlockState(worldPosition).getValue(MBSolidifierBlock.RUNNING);
 
-        MBTankBlockEntity coolantTank = getCoolestFuelTank();
+
         int currentTemp = coolantTank != null ? coolantTank.getFuelTemp().orElse(20) : 20;
         this.temperature = OptionalInt.of(currentTemp);
 
@@ -137,7 +158,8 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
             return;
         }
 
-        boolean changed = false;
+        boolean progressChanged = false;
+        boolean contentsChanged = false;
         boolean isCurrentlyWorking = false;
 
         ItemStack inputStack = ItemUtil.getStack(inventory, INPUT_SLOT);
@@ -147,11 +169,12 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
             isCurrentlyWorking = true;
             maxProgress = 20;
             progress++;
-            changed = true;
+            progressChanged = true;
 
             if (progress >= maxProgress) {
                 executeBucketFill();
                 progress = 0;
+                contentsChanged = true;
             }
         }
 
@@ -176,36 +199,59 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
                 maxProgress = (int) (baseMaxProgress * finalModifier);
                 if (maxProgress < 5) maxProgress = 5;
 
-                progress++;
-                changed = true;
+                FluidStack coolantStack = (fuelBenefited && coolantTank != null)
+                        ? FluidUtil.getStack(coolantTank.getFluidHandler(), 0)
+                        : FluidStack.EMPTY;
 
-                if (progress >= maxProgress) {
-                    if (!fuelBenefited) {
-                        executeSolidifying(recipe, false);
+                boolean coolantEmpty = fuelBenefited && (coolantTank == null || coolantStack.isEmpty());
+
+                if (coolantEmpty) {
+                    if (progress > 0) {
                         progress = 0;
-                        setChanged();
-                    } else if (coolantTank != null) {
-                        FluidStack coolantStack = FluidUtil.getStack(coolantTank.getFluidHandler(), 0);
-                        if (coolantStack.getAmount() >= 100) {
-                            executeSolidifying(recipe, true);
+                        progressChanged = true;
+                    }
+                } else {
+                    if (progress < maxProgress) {
+                        progress++;
+                        progressChanged = true;
+                    }
+
+                    if (progress >= maxProgress) {
+                        if (!fuelBenefited) {
+                            executeSolidifying(recipe, false);
                             progress = 0;
-                            setChanged();
+                            contentsChanged = true;
+                        } else {
+                            var fuelRecipeHolder = TankBlockEntity.getFuel(level, coolantStack);
+                            int requiredAmount = fuelRecipeHolder != null
+                                    ? fuelRecipeHolder.value().fluid().amount()
+                                    : 100;
+
+                            if (coolantStack.getAmount() >= requiredAmount) {
+                                executeSolidifying(recipe, true);
+                                progress = 0;
+                                contentsChanged = true;
+                            }
                         }
                     }
                 }
             } else if (progress > 0) {
                 progress = 0;
-                changed = true;
+                progressChanged = true;
             }
         } else if (progress > 0) {
             progress = 0;
-            changed = true;
+            progressChanged = true;
         }
 
         updateWorkingState(isCurrentlyWorking);
 
-        if (changed) {
+        updateWorkingState(isCurrentlyWorking);
+
+        if (progressChanged || contentsChanged) {
             setChanged();
+        }
+        if (contentsChanged) {
             sync();
         }
     }
@@ -236,7 +282,7 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
         MBTankBlockEntity coolestTank = null;
         int lowestTemp = Integer.MAX_VALUE;
 
-        for (BlockPos pos : controller.cachedMultiblockData.extraBlocks()) {
+        for (BlockPos pos : controller.getCachedTankPositions()) {
             assert level != null;
             if (level.getBlockEntity(pos) instanceof MBTankBlockEntity tank) {
                 FluidStack fluid = FluidUtil.getStack(tank.getFluidHandler(), 0);
@@ -323,6 +369,7 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
         if (controller == null) return;
 
         MultiFluidResourceHandler handler = (MultiFluidResourceHandler) controller.getFluidHandler();
+        boolean coolantDrained = false;
 
         try (Transaction tx = Transaction.open(null)) {
             boolean metalExtracted = false;
@@ -357,6 +404,7 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
                             int amountToDrain = fuelRecipeHolder.value().fluid().amount();
                             coolantHandler.extract(0, FluidResource.of(fuelStack), amountToDrain, tx);
                         });
+                        coolantDrained = true;
                     }
                 }
 
@@ -370,6 +418,11 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
                 tx.commit();
             }
         }
+
+        if (coolantDrained) {
+            coolantTank.setChanged();
+            coolantTank.sync();
+        }
     }
 
     private RecipeHolder<SolidifierRecipe> getRecipe() {
@@ -379,12 +432,23 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
         ItemStack mold = ItemUtil.getStack(inventory, INPUT_SLOT);
         if (mold.isEmpty()) return null;
 
+        RecipeManager recipeManager = level.getServer().getRecipeManager();
+        if (moldCacheDirty || recipeManager != lastRecipeManager) {
+            List<RecipeHolder<SolidifierRecipe>> candidates = new ArrayList<>();
+            for (var holder : recipeManager.recipeMap().byType(SolidifierRecipe.TYPE)) {
+                if (holder.value().mold().test(mold)) {
+                    candidates.add(holder);
+                }
+            }
+            cachedMoldCandidates = candidates;
+            moldCacheDirty = false;
+            lastRecipeManager = recipeManager;
+        }
+
+        if (cachedMoldCandidates.isEmpty()) return null;
+
         FluidResource filterResource = filterFluidHandler.getResource(0);
         var handler = controller.getFluidHandler();
-        var recipes = level.getServer().getRecipeManager().recipeMap().values().stream()
-                .filter(holder -> holder.value().getType() == SolidifierRecipe.TYPE)
-                .map(holder -> (RecipeHolder<SolidifierRecipe>) holder)
-                .toList();
 
         for (int i = 0; i < handler.size(); i++) {
             FluidStack fluid = FluidUtil.getStack(handler, i);
@@ -394,9 +458,9 @@ public class MBSolidifierBlockEntity extends SyncableBlockEntity implements Menu
                 continue;
             }
 
-            for (var holder : recipes) {
+            for (var holder : cachedMoldCandidates) {
                 SolidifierRecipe recipe = holder.value();
-                if (recipe.mold().test(mold) && recipe.fluid().ingredient().test(fluid) && fluid.getAmount() >= recipe.fluid().amount()) {
+                if (recipe.fluid().ingredient().test(fluid) && fluid.getAmount() >= recipe.fluid().amount()) {
                     return holder;
                 }
             }

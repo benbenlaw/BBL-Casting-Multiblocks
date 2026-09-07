@@ -36,6 +36,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -65,7 +66,19 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
 
     public MultiblockData cachedMultiblockData = null;
     public Set<BlockPos> multiblockBlockPos = new HashSet<>();
+    private List<BlockPos> cachedTankPositions = List.of();
     public boolean structureDirty = true;
+
+    private final RecipeHolder<MeltingRecipe>[] cachedSlotRecipes = new RecipeHolder[100];
+    private final boolean[] slotRecipeDirty = new boolean[100];
+    private final Map<EntityType<?>, RecipeHolder<EntityMeltingRecipe>> entityRecipeCache = new HashMap<>();
+    private RecipeManager lastRecipeManager = null;
+
+
+
+    {
+        Arrays.fill(slotRecipeDirty, true);
+    }
 
     private int regulatorCount = 0;
     private int maxItemSlots = 0;
@@ -73,7 +86,15 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
     private final Map<UUID, Integer> entityDamageCooldowns = new HashMap<>();
 
     private final SyncableItemHandler inventory =
-            new DynamicInputItemHandler(this, 100, (i, stack) -> i >= 0 && i < 99, i -> i == 100);
+            new DynamicInputItemHandler(this, 100, (i, stack) -> i >= 0 && i < 99, i -> i == 100) {
+                @Override
+                protected void onContentsChanged(int index, ItemStack previousContents) {
+                    if (index >= 0 && index < slotRecipeDirty.length) {
+                        slotRecipeDirty[index] = true;
+                    }
+                    super.onContentsChanged(index, previousContents);
+                }
+            };
 
     private final MultiFluidResourceHandler fluidInventory =
             new MultiFluidResourceHandler(this, 1, 0,
@@ -123,6 +144,8 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
     public void tick() {
         if (level == null || level.isClientSide()) return;
 
+        refreshRecipeCachesIfNeeded();
+
         if (level.getGameTime() % 100 == 0) {
             structureDirty = true;
         }
@@ -132,7 +155,6 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
             if (cachedMultiblockData != null) {
                 multiblockBlockPos.clear();
                 multiblockBlockPos.addAll(cachedMultiblockData.allBlockPositions());
-
                 updateMultiblockStats();
             }
             structureDirty = false;
@@ -140,7 +162,6 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
 
         boolean isRunning = level.getBlockState(worldPosition).getValue(MBControllerBlock.RUNNING);
 
-        //Entity melting?
         if (isRunning && cachedMultiblockData != null) {
             tickEntityDamage();
         }
@@ -154,8 +175,17 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         }
 
         int currentTemp = temperature.getAsInt();
-        boolean changed = false;
+        boolean progressChanged = false;
+        boolean contentsChanged = false;
         boolean isWorking = false;
+
+        List<FluidStack> existingFluids = new ArrayList<>();
+        boolean hasEmptySlot = false;
+        for (int i = 0; i < fluidInventory.getMaxFluidTypes(); i++) {
+            FluidStack existing = FluidUtil.getStack(fluidInventory, i);
+            if (existing.isEmpty()) hasEmptySlot = true;
+            else existingFluids.add(existing);
+        }
 
         int loopLimit = Math.min(maxItemSlots, 100);
         for (int i = 0; i < loopLimit; i++) {
@@ -167,12 +197,12 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
             if (stack.isEmpty()) {
                 if (progress[i] > 0) {
                     progress[i] = 0;
-                    changed = true;
+                    progressChanged = true;
                 }
                 continue;
             }
 
-            RecipeHolder<MeltingRecipe> recipeHolder = getRecipeForSlot(stack);
+            RecipeHolder<MeltingRecipe> recipeHolder = getRecipeForSlot(i, stack);
 
             if (recipeHolder != null) {
                 MeltingRecipe recipe = recipeHolder.value();
@@ -186,29 +216,45 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
                     }
                     maxProgress[i] = Math.max(max, 20);
 
-                    if (canFitFluids(recipe.output())) {
+                    if (canFitFluids(recipe.output(), existingFluids, hasEmptySlot)) {
                         isWorking = true;
                         progress[i]++;
-                        changed = true;
+                        progressChanged = true;
 
                         if (progress[i] >= maxProgress[i]) {
                             executeMelting(i, recipe, activeFuelTank);
                             progress[i] = 0;
+                            contentsChanged = true;
                         }
                     }
                 } else if (progress[i] > 0) {
                     progress[i] = 0;
-                    changed = true;
+                    progressChanged = true;
                 }
+            } else if (progress[i] > 0) {
+                progress[i] = 0;
+                progressChanged = true;
             }
         }
 
         updateWorkingState(isWorking);
         this.tickResourceSending(level, worldPosition);
 
-        if (changed) {
+        if (progressChanged || contentsChanged) {
             setChanged();
+        }
+        if (contentsChanged) {
             sync();
+        }
+    }
+
+    private void refreshRecipeCachesIfNeeded() {
+        if (level == null || level.getServer() == null) return;
+        RecipeManager current = level.getServer().getRecipeManager();
+        if (current != lastRecipeManager) {
+            Arrays.fill(slotRecipeDirty, true);
+            entityRecipeCache.clear();
+            lastRecipeManager = current;
         }
     }
 
@@ -275,17 +321,12 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         MBTankBlockEntity hottestTank = null;
         int highestTemp = Integer.MIN_VALUE;
 
-        for (BlockPos mbPos : cachedMultiblockData.extraBlocks()) {
-            BlockEntity entity = level.getBlockEntity(mbPos);
-
-            if (entity instanceof MBTankBlockEntity tank) {
+        for (BlockPos pos : cachedTankPositions) {
+            if (level.getBlockEntity(pos) instanceof MBTankBlockEntity tank) {
                 if (!tank.getFluidHandler().getResource(0).isEmpty()) {
-
                     OptionalInt fuelTemp = tank.getFuelTemp();
-
                     if (fuelTemp.isPresent()) {
                         int currentTemp = fuelTemp.getAsInt();
-
                         if (currentTemp > highestTemp) {
                             highestTemp = currentTemp;
                             hottestTank = tank;
@@ -319,7 +360,6 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
             });
 
             for (FluidStackTemplate fluid : recipe.output()) {
-
                 fluidInventory.runInternal(() -> {
                     int remaining = fluid.amount();
                     for (int tank = 0; tank < fluidInventory.getMaxFluidTypes() && remaining > 0; tank++) {
@@ -329,6 +369,9 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
             }
             tx.commit();
         }
+
+        fuelTank.setChanged();
+        fuelTank.sync();
     }
 
     private void tickEntityDamage() {
@@ -337,10 +380,20 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
 
         assert level != null;
         List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, interior);
+        if (entities.isEmpty()) return;
 
         Set<UUID> currentIds = new HashSet<>();
         for (LivingEntity entity : entities) currentIds.add(entity.getUUID());
         entityDamageCooldowns.keySet().retainAll(currentIds);
+
+        // Same precomputed snapshot idea as the item-melting loop
+        List<FluidStack> existingFluids = new ArrayList<>();
+        boolean hasEmptySlot = false;
+        for (int i = 0; i < fluidInventory.getMaxFluidTypes(); i++) {
+            FluidStack existing = FluidUtil.getStack(fluidInventory, i);
+            if (existing.isEmpty()) hasEmptySlot = true;
+            else existingFluids.add(existing);
+        }
 
         for (LivingEntity entity : entities) {
             if (entity.isDeadOrDying()) continue;
@@ -350,7 +403,7 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
 
             EntityMeltingRecipe recipe = recipeHolder.value();
 
-            if (!canFitFluids(recipe.output())) continue;
+            if (!canFitFluids(recipe.output(), existingFluids, hasEmptySlot)) continue;
 
             int cooldown = entityDamageCooldowns.getOrDefault(entity.getUUID(), 0);
             if (cooldown > 0) {
@@ -377,17 +430,25 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
             } else {
                 entityDamageCooldowns.put(entity.getUUID(), 50);
             }
-
         }
     }
 
     private RecipeHolder<EntityMeltingRecipe> getRecipeForEntity(EntityType<?> entityType) {
         if (level == null || level.getServer() == null) return null;
-        return level.getServer().getRecipeManager().recipeMap().values().stream()
-                .filter(holder -> holder.value().getType() == EntityMeltingRecipe.TYPE)
-                .map(holder -> (RecipeHolder<EntityMeltingRecipe>) holder)
-                .filter(holder -> holder.value().entity() == entityType)
-                .findFirst().orElse(null);
+
+        if (entityRecipeCache.containsKey(entityType)) {
+            return entityRecipeCache.get(entityType);
+        }
+
+        RecipeHolder<EntityMeltingRecipe> found = null;
+        for (var holder : level.getServer().getRecipeManager().recipeMap().byType(EntityMeltingRecipe.TYPE)) {
+            if (holder.value().entity() == entityType) {
+                found = holder;
+                break;
+            }
+        }
+        entityRecipeCache.put(entityType, found);
+        return found;
     }
 
     private AABB getInteriorAABB() {
@@ -414,16 +475,26 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         this.cachedMultiblockData = foundData;
 
         if (this.cachedMultiblockData != null) {
-            MBTankBlockEntity tank = getActiveFuelTank();
-            PacketDistributor.sendToAllPlayers(new SyncFuelTanks(this.worldPosition, tank != null ? tank.getBlockPos() : null));
+            List<BlockPos> tankPositions = new ArrayList<>();
 
             for (BlockPos pos : cachedMultiblockData.extraBlocks()) {
-                if (level.getBlockEntity(pos) instanceof MBSolidifierBlockEntity solidifier) {
+                BlockEntity be = level.getBlockEntity(pos);
+                if (be instanceof MBSolidifierBlockEntity solidifier) {
                     solidifier.setController(this);
+                } else if (be instanceof MBTankBlockEntity) {
+                    tankPositions.add(pos);
                 }
             }
-        }
 
+            this.cachedTankPositions = tankPositions;
+
+            MBTankBlockEntity tank = getActiveFuelTank();
+            PacketDistributor.sendToAllPlayers(new SyncFuelTanks(this.worldPosition, tank != null ? tank.getBlockPos() : null));
+        }
+    }
+
+    public List<BlockPos> getCachedTankPositions() {
+        return cachedTankPositions;
     }
 
     private void updateWorkingState(boolean working) {
@@ -433,7 +504,7 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         }
     }
 
-    private boolean canFitFluids(List<FluidStackTemplate> outputs) {
+    private boolean canFitFluids(List<FluidStackTemplate> outputs, List<FluidStack> existingFluids, boolean hasEmptySlot) {
         int totalNeeded = outputs.stream().mapToInt(FluidStackTemplate::amount).sum();
         int currentTotal = fluidInventory.getTotalFluidAmount();
         int capacity = fluidInventory.getCapacityAsInt(0, FluidResource.EMPTY);
@@ -441,12 +512,13 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         if (currentTotal + totalNeeded > capacity) return false;
 
         for (FluidStackTemplate out : outputs) {
-            boolean canPlace = false;
-            for (int i = 0; i < fluidInventory.getMaxFluidTypes(); i++) {
-                FluidStack existing = FluidUtil.getStack(fluidInventory, i);
-                if (existing.isEmpty() || FluidStack.isSameFluidSameComponents(existing, out)) {
-                    canPlace = true;
-                    break;
+            boolean canPlace = hasEmptySlot;
+            if (!canPlace) {
+                for (FluidStack existing : existingFluids) {
+                    if (FluidStack.isSameFluidSameComponents(existing, out)) {
+                        canPlace = true;
+                        break;
+                    }
                 }
             }
             if (!canPlace) return false;
@@ -454,13 +526,22 @@ public class MBControllerBlockEntity extends SyncableBlockEntity implements Menu
         return true;
     }
 
-    private RecipeHolder<MeltingRecipe> getRecipeForSlot(ItemStack stack) {
+    private RecipeHolder<MeltingRecipe> getRecipeForSlot(int slot, ItemStack stack) {
         if (level == null || level.getServer() == null || stack.isEmpty()) return null;
-        return level.getServer().getRecipeManager().recipeMap().values().stream()
-                .filter(holder -> holder.value().getType() == MeltingRecipe.TYPE)
-                .map(holder -> (RecipeHolder<MeltingRecipe>) holder)
-                .filter(holder -> holder.value().input().test(stack))
-                .findFirst().orElse(null);
+
+        if (slotRecipeDirty[slot]) {
+            RecipeHolder<MeltingRecipe> found = null;
+            for (RecipeHolder<MeltingRecipe> holder : level.getServer().getRecipeManager().recipeMap().byType(MeltingRecipe.TYPE)) {
+                if (holder.value().input().test(stack)) {
+                    found = holder;
+                    break;
+                }
+            }
+            cachedSlotRecipes[slot] = found;
+            slotRecipeDirty[slot] = false;
+        }
+
+        return cachedSlotRecipes[slot];
     }
 
     public void setClientSideFuelTankPos(BlockPos pos) {

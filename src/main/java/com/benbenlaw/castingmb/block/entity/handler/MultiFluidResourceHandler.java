@@ -19,7 +19,7 @@ public class MultiFluidResourceHandler extends SyncableFluidHandler {
     private final SyncableBlockEntity syncableBlockEntity;
 
     public MultiFluidResourceHandler(SyncableBlockEntity blockEntity, int maxFluidTypes, int totalCapacity, BiPredicate<Integer, FluidStack> canOutput, Predicate<Integer> canExtract) {
-        super(blockEntity, 20, 1000000, canOutput, canExtract);
+        super(blockEntity, 64, 1000000, canOutput, canExtract);
 
         this.syncableBlockEntity = blockEntity;
         this.totalCapacity = totalCapacity;
@@ -45,27 +45,22 @@ public class MultiFluidResourceHandler extends SyncableFluidHandler {
 
     @Override
     public int insert(int index, FluidResource resource, int amount, TransactionContext transaction) {
-        // 1. Basic validation
         if (resource.isEmpty() || amount <= 0) return 0;
 
-        // 2. Type limit check (0 or negative = unlimited)
         if (this.maxFluidTypes > 0 && index >= this.maxFluidTypes) return 0;
 
-        // 3. Capacity check
         int currentTotal = getTotalFluidAmount();
         int spaceLeft = Math.max(0, this.totalCapacity - currentTotal);
         int actualToInsert = Math.min(amount, spaceLeft);
 
         if (actualToInsert <= 0) return 0;
 
-        // 4. Resource validation
         FluidResource existingResource = getResource(index);
 
         if (!existingResource.isEmpty() && !existingResource.equals(resource)) {
             return 0;
         }
 
-        // 5. Delegate to parent
         return super.insert(index, resource, actualToInsert, transaction);
     }
 
@@ -92,7 +87,6 @@ public class MultiFluidResourceHandler extends SyncableFluidHandler {
 
         int amountToRemove = currentTotal - this.totalCapacity;
 
-        // Iterate backwards through slots to void the most recently added fluids first
         try (Transaction tx = Transaction.open(null)) {
             for (int i = this.size() - 1; i >= 0 && amountToRemove > 0; i--) {
                 int slotAmount = getAmountAsInt(i);
