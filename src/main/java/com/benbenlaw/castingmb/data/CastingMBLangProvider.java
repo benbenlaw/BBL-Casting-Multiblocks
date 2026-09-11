@@ -25,6 +25,7 @@ public class CastingMBLangProvider extends LanguageProvider {
         add("block.castingmb.mb_tank", "Casting Multiblock Tank");
         add("block.castingmb.mb_black_bricks", "Multiblock Black Bricks");
         add("block.castingmb.mb_regulator", "Multiblock Regulator");
+        add("block.castingmb.mb_black_brick_glass", "Multiblock Black Brick Glass");
 
         //Tooltips
         add("tooltip.castingmb.stacked", "Stacked: %s");

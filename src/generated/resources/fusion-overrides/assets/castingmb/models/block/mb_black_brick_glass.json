@@ -1,0 +1,12 @@
+{
+  "type": "connecting",
+  "parent": "minecraft:block/cube_all",
+  "connections": {
+    "type": "is_same_block"
+  },
+  "loader": "fusion:model",
+  "textures": {
+    "all": "castingmb:block/mb_black_brick_glass_connected",
+    "particle": "castingmb:block/mb_black_brick_glass"
+  }
+}

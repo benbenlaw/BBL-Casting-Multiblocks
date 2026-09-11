@@ -1,6 +1,6 @@
-// 26.1.2	2026-04-17T16:20:25.0485902	Tags for minecraft:block mod id casting
+// 26.1.2	2026-09-11T13:30:15.4703632	Tags for minecraft:block mod id casting
 911ed1e87f958e7f72cffb27ba1dad0e767deb7e data/castingmb/tags/block/controller_extra_blocks.json
 60b281db00a1cc9dc0dba90a53b8740f7c318622 data/castingmb/tags/block/controller_floors.json
 3d0cbd7114e6a0fa897488ba9b4059382e1bdcaa data/castingmb/tags/block/controller_regulators.json
-6fd4d77199e7adc64c906f1aa0f4fc579ad37957 data/castingmb/tags/block/controller_walls.json
-41ac47958f55dd5ec7c2d01beb4ddd518b55bc2e data/minecraft/tags/block/mineable/pickaxe.json
+9a21e01105596a0ae741b15e998e2ab6b9cfb8c6 data/castingmb/tags/block/controller_walls.json
+59c4533d6602aa19f0856908019c528ca2efd094 data/minecraft/tags/block/mineable/pickaxe.json

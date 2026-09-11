@@ -53,6 +53,7 @@ public class CastingMBModelProvider extends ModelProvider {
         createMachineBlock(CastingMBBlocks.MB_SOLIDIFIER.get(), blockModels.blockStateOutput, blockModels.modelOutput);
         createMachineBlock(CastingMBBlocks.MB_REGULATOR.get(), blockModels.blockStateOutput, blockModels.modelOutput);
         blockModels.createTrivialCube(CastingMBBlocks.MB_BLACK_BRICKS.get());
+        blockModels.createTrivialCube(CastingMBBlocks.MB_BLACK_BRICK_GLASS.get());
 
         blockModels.blockStateOutput.accept(
                 createSimpleBlock(

@@ -88,6 +88,8 @@ dependencies {
     runtimeOnly("curse.maven:guideme-1173950:7929350")
     //Observable
     runtimeOnly("curse.maven:observable-remake-1639360:8589511")
+    //Fusion
+    implementation("curse.maven:fusion-connected-textures-854949:8536640")
 
 }
 

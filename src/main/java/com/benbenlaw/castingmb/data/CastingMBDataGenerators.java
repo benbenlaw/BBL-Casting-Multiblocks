@@ -27,6 +27,7 @@ public class CastingMBDataGenerators {
 
         generator.addProvider(true, new CastingMBBlockTags(packOutput, lookupProvider));
         generator.addProvider(true, new CastingMBModelProvider(packOutput));
+        generator.addProvider(true, new FusionConnectedTextureOverridesProvider(packOutput));
 
         generator.addProvider(true, new CastingMBItemTags(packOutput, lookupProvider));
         generator.addProvider(true, new CastingMBLangProvider(packOutput));

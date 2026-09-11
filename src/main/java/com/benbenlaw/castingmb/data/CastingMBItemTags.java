@@ -41,6 +41,7 @@ public class CastingMBItemTags extends ItemTagsProvider {
         ;
 
         tag(CastingMBTags.Items.CONTROLLER_WALLS)
+                .add(CastingMBBlocks.MB_BLACK_BRICK_GLASS.get().asItem())
                 .add(CastingMBBlocks.MB_BLACK_BRICKS.get().asItem())
                 .add(CastingMBBlocks.MB_SOLIDIFIER.get().asItem())
                 .add(CastingMBBlocks.MB_TANK.get().asItem())
@@ -48,6 +49,7 @@ public class CastingMBItemTags extends ItemTagsProvider {
         ;
 
         tag(CastingMBTags.Items.CONTROLLER_EXTRA_BLOCKS)
+                .add(CastingMBBlocks.MB_BLACK_BRICK_GLASS.get().asItem())
                 .add(CastingMBBlocks.MB_BLACK_BRICKS.get().asItem())
                 .add(CastingMBBlocks.MB_SOLIDIFIER.get().asItem())
                 .add(CastingMBBlocks.MB_TANK.get().asItem())

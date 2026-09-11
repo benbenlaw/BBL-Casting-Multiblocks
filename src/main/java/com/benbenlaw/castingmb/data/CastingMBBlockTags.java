@@ -27,6 +27,7 @@ public class CastingMBBlockTags extends BlockTagsProvider {
     protected void addTags(HolderLookup.@NotNull Provider provider) {
 
         tag(BlockTags.MINEABLE_WITH_PICKAXE)
+                .add(CastingMBBlocks.MB_BLACK_BRICK_GLASS.get())
                 .add(CastingMBBlocks.MB_CONTROLLER.get())
                 .add(CastingMBBlocks.MB_SOLIDIFIER.get())
                 .add(CastingMBBlocks.MB_TANK.get())
@@ -47,7 +48,7 @@ public class CastingMBBlockTags extends BlockTagsProvider {
                 .add(CastingMBBlocks.MB_SOLIDIFIER.get())
                 .add(CastingMBBlocks.MB_TANK.get())
                 .add(CastingMBBlocks.MB_CONTROLLER.get())
-                .add(CastingBlocks.BLACK_BRICK_GLASS.get())
+                .add(CastingMBBlocks.MB_BLACK_BRICK_GLASS.get())
                 .add(CastingMBBlocks.MB_REGULATOR.get())
                 ;
 

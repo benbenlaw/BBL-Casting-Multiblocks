@@ -10,6 +10,8 @@ import com.benbenlaw.castingmb.block.custom.MBTankBlock;
 import com.benbenlaw.castingmb.item.CastingMBItems;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.TransparentBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -19,6 +21,13 @@ import java.util.function.Function;
 public class CastingMBBlocks {
 
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(CastingMB.MOD_ID);
+
+    public static final DeferredBlock<Block> MB_BLACK_BRICK_GLASS = registerBlock("mb_black_brick_glass",
+            properties -> new TransparentBlock(properties
+                    .strength(1.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .sound(SoundType.GLASS)));
 
     public static final DeferredBlock<Block> MB_BLACK_BRICKS = registerBlock("mb_black_bricks",
             properties -> new Block(properties

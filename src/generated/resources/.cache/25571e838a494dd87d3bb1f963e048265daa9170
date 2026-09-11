@@ -1,5 +1,5 @@
-// 26.1.2	2026-04-17T16:20:25.0506163	Tags for minecraft:item mod id castingmb
-911ed1e87f958e7f72cffb27ba1dad0e767deb7e data/castingmb/tags/item/controller_extra_blocks.json
+// 26.1.2	2026-09-11T13:30:15.4760337	Tags for minecraft:item mod id castingmb
+4a2fab69e845a0839083541e7be37bee0cd24ce4 data/castingmb/tags/item/controller_extra_blocks.json
 60b281db00a1cc9dc0dba90a53b8740f7c318622 data/castingmb/tags/item/controller_floors.json
 3d0cbd7114e6a0fa897488ba9b4059382e1bdcaa data/castingmb/tags/item/controller_regulators.json
-12c86b93b33d570270aa4926201b7166e9276bfd data/castingmb/tags/item/controller_walls.json
+a61704ef1617c5cc6a594dde82164688833051cc data/castingmb/tags/item/controller_walls.json
